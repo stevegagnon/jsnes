@@ -1,51 +1,70 @@
-var CPU = require("./cpu");
-var Controller = require("./controller");
-var PPU = require("./ppu");
+import CPU from './cpu';
+
 var PAPU = require("./papu");
 var ROM = require("./rom");
 
-var NES = function (opts) {
-  this.opts = {
-    onFrame: function () {},
-    onAudioSample: null,
-    onStatusUpdate: function () {},
-    onBatteryRamWrite: function () {},
+import PPU from './ppu';
 
-    // FIXME: not actually used except for in PAPU
-    preferredFrameRate: 60,
+export enum Button {
+  A = 0,
+  B = 1,
+  SELECT = 2,
+  START = 3,
+  UP = 4,
+  DOWN = 5,
+  LEFT = 6,
+  RIGHT = 7,
+}
 
-    emulateSound: true,
-    sampleRate: 48000, // Sound sample rate in hz
-  };
-  if (typeof opts !== "undefined") {
-    var key;
-    for (key in this.opts) {
-      if (typeof opts[key] !== "undefined") {
-        this.opts[key] = opts[key];
-      }
-    }
-  }
+type NesOpts = {
+  onFrame?: () => unknown,
+  onAudioSample?: () => unknown,
+  onStatusUpdate?: (text: string) => unknown,
+  onBatteryRamWrite?: () => unknown,
+  preferredFrameRate?: number,
+  emulateSound?: boolean,
+  sampleRate?: number
+};
 
-  this.frameTime = 1000 / this.opts.preferredFrameRate;
+function NES({
+  onFrame,
+  onAudioSample,
+  onStatusUpdate,
+  onBatteryRamWrite,
+  preferredFrameRate = 60,
+  emulateSound = true,
+  sampleRate = 48000
+}: NesOpts) {
+  const frameTime = 1000 / preferredFrameRate;
 
-  this.ui = {
+  const ui = {
     writeFrame: this.opts.onFrame,
     updateStatus: this.opts.onStatusUpdate,
   };
-  this.cpu = new CPU(this);
-  this.ppu = new PPU(this);
+
+  const cpu = new CPU(this);
+
+  const ppu = new PPU(this);
+
   this.papu = new PAPU(this);
   this.mmap = null; // set in loadROM()
-  this.controllers = {
-    1: new Controller(),
-    2: new Controller(),
+  const controllers = {
+    1: new Array(8).fill(0x40),
+    2: new Array(8).fill(0x40),
   };
 
-  this.ui.updateStatus("Ready to load a ROM.");
+  function buttonDown(controller: number, button: number) {
+    this.controllers[controller][button] = 0x41;
+  }
+
+  function buttonUp(controller: number, button: number) {
+    this.controllers[controller][button] = 0x40;
+  }
+
+  onStatusUpdate("Ready to load a ROM.");
 
   this.frame = this.frame.bind(this);
-  this.buttonDown = this.buttonDown.bind(this);
-  this.buttonUp = this.buttonUp.bind(this);
+
   this.zapperMove = this.zapperMove.bind(this);
   this.zapperFireDown = this.zapperFireDown.bind(this);
   this.zapperFireUp = this.zapperFireUp.bind(this);
@@ -76,7 +95,7 @@ NES.prototype = {
     var cpu = this.cpu;
     var ppu = this.ppu;
     var papu = this.papu;
-    FRAMELOOP: for (;;) {
+    FRAMELOOP: for (; ;) {
       if (cpu.cyclesToHalt === 0) {
         // Execute a CPU instruction
         cycles = cpu.emulate();
@@ -127,14 +146,6 @@ NES.prototype = {
       }
     }
     this.fpsFrameCount++;
-  },
-
-  buttonDown: function (controller, button) {
-    this.controllers[controller].buttonDown(button);
-  },
-
-  buttonUp: function (controller, button) {
-    this.controllers[controller].buttonUp(button);
   },
 
   zapperMove: function (x, y) {

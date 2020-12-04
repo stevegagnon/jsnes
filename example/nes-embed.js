@@ -56,23 +56,23 @@ function keyboard(callback, event){
 	var player = 1;
 	switch(event.keyCode){
 		case 38: // UP
-			callback(player, jsnes.Controller.BUTTON_UP); break;
+			callback(player, Button.UP); break;
 		case 40: // Down
-			callback(player, jsnes.Controller.BUTTON_DOWN); break;
+			callback(player, Button.DOWN); break;
 		case 37: // Left
-			callback(player, jsnes.Controller.BUTTON_LEFT); break;
+			callback(player, Button.LEFT); break;
 		case 39: // Right
-			callback(player, jsnes.Controller.BUTTON_RIGHT); break;
+			callback(player, Button.RIGHT); break;
 		case 65: // 'a' - qwerty, dvorak
 		case 81: // 'q' - azerty
-			callback(player, jsnes.Controller.BUTTON_A); break;
+			callback(player, Button.A); break;
 		case 83: // 's' - qwerty, azerty
 		case 79: // 'o' - dvorak
-			callback(player, jsnes.Controller.BUTTON_B); break;
+			callback(player, Button.B); break;
 		case 9: // Tab
-			callback(player, jsnes.Controller.BUTTON_SELECT); break;
+			callback(player, Button.SELECT); break;
 		case 13: // Return
-			callback(player, jsnes.Controller.BUTTON_START); break;
+			callback(player, Button.START); break;
 		default: break;
 	}
 }
