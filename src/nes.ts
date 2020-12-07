@@ -37,12 +37,15 @@ function NES({
 }: NesOpts) {
   const frameTime = 1000 / preferredFrameRate;
 
+  let fpsFrameCount = 0;
+  let romData = null;
+
   const ui = {
     writeFrame: this.opts.onFrame,
     updateStatus: this.opts.onStatusUpdate,
   };
 
-  const cpu = new CPU(this);
+  const cpu = CPU(this);
 
   const ppu = new PPU(this);
 
@@ -52,6 +55,10 @@ function NES({
     1: new Array(8).fill(0x40),
     2: new Array(8).fill(0x40),
   };
+
+  function stop(message) {
+
+  }
 
   function buttonDown(controller: number, button: number) {
     this.controllers[controller][button] = 0x41;
@@ -68,14 +75,11 @@ function NES({
   this.zapperMove = this.zapperMove.bind(this);
   this.zapperFireDown = this.zapperFireDown.bind(this);
   this.zapperFireUp = this.zapperFireUp.bind(this);
-};
 
-NES.prototype = {
-  fpsFrameCount: 0,
-  romData: null,
+
 
   // Resets the system
-  reset: function () {
+  function reset() {
     if (this.mmap !== null) {
       this.mmap.reset();
     }
@@ -86,9 +90,9 @@ NES.prototype = {
 
     this.lastFpsTime = null;
     this.fpsFrameCount = 0;
-  },
+  }
 
-  frame: function () {
+  function frame() {
     this.ppu.startFrame();
     var cycles = 0;
     var emulateSound = this.opts.emulateSound;
@@ -146,25 +150,25 @@ NES.prototype = {
       }
     }
     this.fpsFrameCount++;
-  },
+  }
 
-  zapperMove: function (x, y) {
+  function zapperMove(x, y) {
     if (!this.mmap) return;
     this.mmap.zapperX = x;
     this.mmap.zapperY = y;
-  },
+  }
 
-  zapperFireDown: function () {
+  function zapperFireDown() {
     if (!this.mmap) return;
     this.mmap.zapperFired = true;
-  },
+  }
 
-  zapperFireUp: function () {
+  function zapperFireUp() {
     if (!this.mmap) return;
     this.mmap.zapperFired = false;
-  },
+  }
 
-  getFPS: function () {
+  function getFPS() {
     var now = +new Date();
     var fps = null;
     if (this.lastFpsTime) {
@@ -173,17 +177,17 @@ NES.prototype = {
     this.fpsFrameCount = 0;
     this.lastFpsTime = now;
     return fps;
-  },
+  }
 
-  reloadROM: function () {
+  function reloadROM() {
     if (this.romData !== null) {
       this.loadROM(this.romData);
     }
-  },
+  }
 
   // Loads a ROM file into the CPU and PPU.
   // The ROM file is validated first.
-  loadROM: function (data) {
+  function loadROM(data) {
     // Load ROM file:
     this.rom = new ROM(this);
     this.rom.load(data);
@@ -193,29 +197,30 @@ NES.prototype = {
     this.mmap.loadROM();
     this.ppu.setMirroring(this.rom.getMirroringType());
     this.romData = data;
-  },
+    this.cpu = CPU(this.mmap, halt);
+  }
 
-  setFramerate: function (rate) {
+  function setFramerate(rate) {
     this.opts.preferredFrameRate = rate;
     this.frameTime = 1000 / rate;
     this.papu.setSampleRate(this.opts.sampleRate, false);
-  },
+  }
 
-  toJSON: function () {
+  function toJSON() {
     return {
       romData: this.romData,
       cpu: this.cpu.toJSON(),
       mmap: this.mmap.toJSON(),
       ppu: this.ppu.toJSON(),
     };
-  },
+  }
 
-  fromJSON: function (s) {
+  function fromJSON(s) {
     this.loadROM(s.romData);
     this.cpu.fromJSON(s.cpu);
     this.mmap.fromJSON(s.mmap);
     this.ppu.fromJSON(s.ppu);
-  },
+  }
 };
 
 module.exports = NES;
