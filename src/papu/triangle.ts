@@ -32,32 +32,32 @@ export function ChannelTriangle({ getLengthMax }) {
   }
 
   function clockLengthCounter() {
-    if (this.lengthCounterEnable && this.lengthCounter > 0) {
-      this.lengthCounter--;
-      if (this.lengthCounter === 0) {
-        this.updateSampleCondition();
+    if (lengthCounterEnable && lengthCounter > 0) {
+      lengthCounter--;
+      if (lengthCounter === 0) {
+        updateSampleCondition();
       }
     }
   }
 
   function clockLinearCounter() {
-    if (this.lcHalt) {
+    if (lcHalt) {
       // Load:
-      this.linearCounter = this.lcLoadValue;
-      this.updateSampleCondition();
-    } else if (this.linearCounter > 0) {
+      linearCounter = lcLoadValue;
+      updateSampleCondition();
+    } else if (linearCounter > 0) {
       // Decrement:
-      this.linearCounter--;
-      this.updateSampleCondition();
+      linearCounter--;
+      updateSampleCondition();
     }
-    if (!this.lcControl) {
+    if (!lcControl) {
       // Clear halt flag:
-      this.lcHalt = false;
+      lcHalt = false;
     }
   }
 
   function getLengthStatus() {
-    return this.lengthCounter === 0 || !this.isEnabled ? 0 : 1;
+    return lengthCounter === 0 || !isEnabled ? 0 : 1;
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -68,64 +68,64 @@ export function ChannelTriangle({ getLengthMax }) {
   function writeReg(address, value) {
     if (address === 0x4008) {
       // New values for linear counter:
-      this.lcControl = (value & 0x80) !== 0;
-      this.lcLoadValue = value & 0x7f;
+      lcControl = (value & 0x80) !== 0;
+      lcLoadValue = value & 0x7f;
 
       // Length counter enable:
-      this.lengthCounterEnable = !this.lcControl;
+      lengthCounterEnable = !lcControl;
     } else if (address === 0x400a) {
       // Programmable timer:
-      this.progTimerMax &= 0x700;
-      this.progTimerMax |= value;
+      progTimerMax &= 0x700;
+      progTimerMax |= value;
     } else if (address === 0x400b) {
       // Programmable timer, length counter
-      this.progTimerMax &= 0xff;
-      this.progTimerMax |= (value & 0x07) << 8;
-      this.lengthCounter = this.getLengthMax(value & 0xf8);
-      this.lcHalt = true;
+      progTimerMax &= 0xff;
+      progTimerMax |= (value & 0x07) << 8;
+      lengthCounter = getLengthMax(value & 0xf8);
+      lcHalt = true;
     }
 
-    this.updateSampleCondition();
+    updateSampleCondition();
   }
 
   function clockProgrammableTimer(nCycles) {
-    if (this.progTimerMax > 0) {
-      this.progTimerCount += nCycles;
+    if (progTimerMax > 0) {
+      progTimerCount += nCycles;
       while (
-        this.progTimerMax > 0 &&
-        this.progTimerCount >= this.progTimerMax
+        progTimerMax > 0 &&
+        progTimerCount >= progTimerMax
       ) {
-        this.progTimerCount -= this.progTimerMax;
+        progTimerCount -= progTimerMax;
         if (
-          this.isEnabled &&
-          this.lengthCounter > 0 &&
-          this.linearCounter > 0
+          isEnabled &&
+          lengthCounter > 0 &&
+          linearCounter > 0
         ) {
-          this.clockTriangleGenerator();
+          clockTriangleGenerator();
         }
       }
     }
   }
 
   function clockTriangleGenerator() {
-    this.triangleCounter++;
-    this.triangleCounter &= 0x1f;
+    triangleCounter++;
+    triangleCounter &= 0x1f;
   }
 
   function setEnabled(value) {
-    this.isEnabled = value;
+    isEnabled = value;
     if (!value) {
-      this.lengthCounter = 0;
+      lengthCounter = 0;
     }
-    this.updateSampleCondition();
+    updateSampleCondition();
   }
 
   function updateSampleCondition() {
-    this.sampleCondition =
-      this.isEnabled &&
-      this.progTimerMax > 7 &&
-      this.linearCounter > 0 &&
-      this.lengthCounter > 0;
+    sampleCondition =
+      isEnabled &&
+      progTimerMax > 7 &&
+      linearCounter > 0 &&
+      lengthCounter > 0;
   }
 
   return {
