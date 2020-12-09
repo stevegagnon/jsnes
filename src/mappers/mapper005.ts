@@ -137,15 +137,15 @@ export default mapper000;
 //       }
 //     },
 //     loadROM() {
-//       if (!nes.rom.valid) {
+//       if (!nes.rom.isValid()) {
 //         throw new Error("UNROM: Invalid ROM! Unable to load.");
 //       }
 
 //       // Load PRG-ROM:
-//       mapper.load8kRomBank(nes.rom.romCount * 2 - 1, 0x8000);
-//       mapper.load8kRomBank(nes.rom.romCount * 2 - 1, 0xa000);
-//       mapper.load8kRomBank(nes.rom.romCount * 2 - 1, 0xc000);
-//       mapper.load8kRomBank(nes.rom.romCount * 2 - 1, 0xe000);
+//       mapper.load8kRomBank(nes.rom.getRomCount() * 2 - 1, 0x8000);
+//       mapper.load8kRomBank(nes.rom.getRomCount() * 2 - 1, 0xa000);
+//       mapper.load8kRomBank(nes.rom.getRomCount() * 2 - 1, 0xc000);
+//       mapper.load8kRomBank(nes.rom.getRomCount() * 2 - 1, 0xe000);
 
 //       // Load CHR-ROM:
 //       mapper.loadCHRROM();

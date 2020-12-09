@@ -17,15 +17,15 @@ export function mapper011(nes) {
         mapper.write(address, value)
       } else {
         // Swap in the given PRG-ROM bank:
-        var prgbank1 = ((value & 0xf) * 2) % nes.rom.romCount;
-        var prgbank2 = ((value & 0xf) * 2 + 1) % nes.rom.romCount;
+        var prgbank1 = ((value & 0xf) * 2) % nes.rom.getRomCount();
+        var prgbank2 = ((value & 0xf) * 2 + 1) % nes.rom.getRomCount();
     
         mapper.loadRomBank(prgbank1, 0x8000);
         mapper.loadRomBank(prgbank2, 0xc000);
     
-        if (nes.rom.vromCount > 0) {
+        if (nes.rom.getVRomCount() > 0) {
           // Swap in the given VROM bank at 0x0000:
-          var bank = ((value >> 4) * 2) % nes.rom.vromCount;
+          var bank = ((value >> 4) * 2) % nes.rom.getVRomCount();
           mapper.loadVromBank(bank, 0x0000);
           mapper.loadVromBank(bank + 1, 0x1000);
         }

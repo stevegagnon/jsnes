@@ -1,102 +1,14 @@
 import { Tile, TileFields } from './tile';
+import { RomFlags } from './rom';
 
-var utils = require("./utils");
+export enum PpuStatus {
+  VRAMWRITE = 4,
+  SLSPRITECOUNT = 5,
+  SPRITE0HIT = 6,
+  VBLANK = 7,
+};
 
-const STATUS_VRAMWRITE = 4;
-const STATUS_SLSPRITECOUNT = 5;
-const STATUS_SPRITE0HIT = 6;
-const STATUS_VBLANK = 7;
-
-const JSON_PROPERTIES = [
-  // Memory
-  "vramMem",
-  "spriteMem",
-  // Counters
-  "cntFV",
-  "cntV",
-  "cntH",
-  "cntVT",
-  "cntHT",
-  // Registers
-  "regFV",
-  "regV",
-  "regH",
-  "regVT",
-  "regHT",
-  "regFH",
-  "regS",
-  // VRAM addr
-  "vramAddress",
-  "vramTmpAddress",
-  // Control/Status registers
-  "f_nmiOnVblank",
-  "f_spriteSize",
-  "f_bgPatternTable",
-  "f_spPatternTable",
-  "f_addrInc",
-  "f_nTblAddress",
-  "f_color",
-  "f_spVisibility",
-  "f_bgVisibility",
-  "f_spClipping",
-  "f_bgClipping",
-  "f_dispType",
-  // VRAM I/O
-  "vramBufferedReadValue",
-  "firstWrite",
-  // Mirroring
-  "currentMirroring",
-  "vramMirrorTable",
-  "ntable1",
-  // SPR-RAM I/O
-  "sramAddress",
-  // Sprites. Most sprite data is rebuilt from spriteMem
-  "hitSpr0",
-  // Palettes
-  "sprPalette",
-  "imgPalette",
-  // Rendering progression
-  "curX",
-  "scanline",
-  "lastRenderedScanline",
-  "curNt",
-  "scantile",
-  // Used during rendering
-  "attrib",
-  "buffer",
-  "bgbuffer",
-  "pixrendered",
-  // Misc
-  "requestEndFrame",
-  "nmiOk",
-  "dummyCycleToggle",
-  "nmiCounter",
-  "validTileData",
-  "scanlineAlreadyRendered",
-];
-
-function getRed(rgb) {
-  return (rgb >> 16) & 0xff;
-}
-
-function getGreen(rgb) {
-  return (rgb >> 8) & 0xff;
-}
-
-function getBlue(rgb) {
-  return rgb & 0xff;
-}
-
-function getRgb(r, g, b) {
-  return (r << 16) | (g << 8) | b;
-}
-
-export function PPU(
-  ui,
-  cpu,
-  rom,
-  mmap
-) {
+export function PPU({ ui, cpu, mmap }) {
   let vramMem = null;
   let spriteMem = null;
   let vramAddress = null;
@@ -379,7 +291,7 @@ export function PPU(
     defineMirrorRegion(0x3000, 0x2000, 0xf00);
     defineMirrorRegion(0x4000, 0x0000, 0x4000);
 
-    if (mirroring === rom.HORIZONTAL_MIRRORING) {
+    if (mirroring === RomFlags.HORIZONTAL_MIRRORING) {
       // Horizontal mirroring.
 
       ntable1[0] = 0;
@@ -389,7 +301,7 @@ export function PPU(
 
       defineMirrorRegion(0x2400, 0x2000, 0x400);
       defineMirrorRegion(0x2c00, 0x2800, 0x400);
-    } else if (mirroring === rom.VERTICAL_MIRRORING) {
+    } else if (mirroring === RomFlags.VERTICAL_MIRRORING) {
       // Vertical mirroring.
 
       ntable1[0] = 0;
@@ -399,7 +311,7 @@ export function PPU(
 
       defineMirrorRegion(0x2800, 0x2000, 0x400);
       defineMirrorRegion(0x2c00, 0x2400, 0x400);
-    } else if (mirroring === rom.SINGLESCREEN_MIRRORING) {
+    } else if (mirroring === RomFlags.SINGLESCREEN_MIRRORING) {
       // Single Screen mirroring
 
       ntable1[0] = 0;
@@ -410,7 +322,7 @@ export function PPU(
       defineMirrorRegion(0x2400, 0x2000, 0x400);
       defineMirrorRegion(0x2800, 0x2000, 0x400);
       defineMirrorRegion(0x2c00, 0x2000, 0x400);
-    } else if (mirroring === rom.SINGLESCREEN_MIRRORING2) {
+    } else if (mirroring === RomFlags.SINGLESCREEN_MIRRORING2) {
       ntable1[0] = 1;
       ntable1[1] = 1;
       ntable1[2] = 1;
@@ -469,10 +381,10 @@ export function PPU(
 
       case 20:
         // Clear VBlank flag:
-        setStatusFlag(STATUS_VBLANK, false);
+        setStatusFlag(PpuStatus.VBLANK, false);
 
         // Clear Sprite #0 hit flag:
-        setStatusFlag(STATUS_SPRITE0HIT, false);
+        setStatusFlag(PpuStatus.SPRITE0HIT, false);
         hitSpr0 = false;
         spr0HitX = -1;
         spr0HitY = -1;
@@ -505,7 +417,7 @@ export function PPU(
       case 261:
         // Dead scanline, no rendering.
         // Set VINT:
-        setStatusFlag(STATUS_VBLANK, true);
+        setStatusFlag(PpuStatus.VBLANK, true);
         requestEndFrame = true;
         nmiCounter = 9;
 
@@ -711,10 +623,8 @@ export function PPU(
 
   function setStatusFlag(flag, value) {
     var n = 1 << flag;
-    cpu.mem[0x2002] =
-      (cpu.mem[0x2002] & (255 - n)) | (value ? n : 0);
+    cpu.mem[0x2002] = (cpu.mem[0x2002] & (255 - n)) | (value ? n : 0);
   }
-
 
   // CPU Register $2002:
   // Read the Status Register.
@@ -725,7 +635,7 @@ export function PPU(
     firstWrite = true;
 
     // Clear VBlank flag:
-    setStatusFlag(STATUS_VBLANK, false);
+    setStatusFlag(PpuStatus.VBLANK, false);
 
     // Fetch status data:
     return tmp;
@@ -1551,7 +1461,7 @@ export function PPU(
 
   function doNMI() {
     // Set VBlank flag:
-    setStatusFlag(STATUS_VBLANK, true);
+    setStatusFlag(PpuStatus.VBLANK, true);
     //nes.getCpu().doNonMaskableInterrupt();
     cpu.requestIrq(cpu.IRQ_NMI);
   }
@@ -1563,37 +1473,158 @@ export function PPU(
 
 
   function toJSON() {
-    var i;
-    var state = utils.toJSON(this);
-
-    state.nameTable = [];
-    for (i = 0; i < nameTable.length; i++) {
-      state.nameTable[i] = nameTableToJSON(i);
-    }
-
-    state.ptTile = [];
-    for (i = 0; i < ptTile.length; i++) {
-      state.ptTile[i] = ptTile[i].toJSON();
-    }
-
-    return state;
+    return {
+      // Memory
+      vramMem,
+      spriteMem,
+      // Counters
+      cntFV,
+      cntV,
+      cntH,
+      cntVT,
+      cntHT,
+      // Registers
+      regFV,
+      regV,
+      regH,
+      regVT,
+      regHT,
+      regFH,
+      regS,
+      // VRAM addr
+      vramAddress,
+      vramTmpAddress,
+      // Control/Status registers
+      f_nmiOnVblank,
+      f_spriteSize,
+      f_bgPatternTable,
+      f_spPatternTable,
+      f_addrInc,
+      f_nTblAddress,
+      f_color,
+      f_spVisibility,
+      f_bgVisibility,
+      f_spClipping,
+      f_bgClipping,
+      f_dispType,
+      // VRAM I/O
+      vramBufferedReadValue,
+      firstWrite,
+      // Mirroring
+      currentMirroring,
+      vramMirrorTable,
+      ntable1,
+      // SPR-RAM I/O
+      sramAddress,
+      // Sprites. Most sprite data is rebuilt from spriteMem
+      hitSpr0,
+      // Palettes
+      sprPalette,
+      imgPalette,
+      // Rendering progression
+      curX,
+      scanline,
+      lastRenderedScanline,
+      curNt,
+      scantile,
+      // Used during rendering
+      attrib,
+      buffer,
+      bgbuffer,
+      pixrendered,
+      // Misc
+      requestEndFrame,
+      nmiOk,
+      dummyCycleToggle,
+      nmiCounter,
+      validTileData,
+      scanlineAlreadyRendered,
+      nameTable: nameTable.map(({ tile, attrib }) => ({ tile, attrib })),
+      ptTile: ptTile.map(p => p.toJSON()),
+    };
   }
 
   function fromJSON(state) {
-    var i;
+    [
+      // Memory
+      vramMem,
+      spriteMem,
+      // Counters
+      cntFV,
+      cntV,
+      cntH,
+      cntVT,
+      cntHT,
+      // Registers
+      regFV,
+      regV,
+      regH,
+      regVT,
+      regHT,
+      regFH,
+      regS,
+      // VRAM addr
+      vramAddress,
+      vramTmpAddress,
+      // Control/Status registers
+      f_nmiOnVblank,
+      f_spriteSize,
+      f_bgPatternTable,
+      f_spPatternTable,
+      f_addrInc,
+      f_nTblAddress,
+      f_color,
+      f_spVisibility,
+      f_bgVisibility,
+      f_spClipping,
+      f_bgClipping,
+      f_dispType,
+      // VRAM I/O
+      vramBufferedReadValue,
+      firstWrite,
+      // Mirroring
+      currentMirroring,
+      vramMirrorTable,
+      ntable1,
+      // SPR-RAM I/O
+      sramAddress,
+      // Sprites. Most sprite data is rebuilt from spriteMem
+      hitSpr0,
+      // Palettes
+      sprPalette,
+      imgPalette,
+      // Rendering progression
+      curX,
+      scanline,
+      lastRenderedScanline,
+      curNt,
+      scantile,
+      // Used during rendering
+      attrib,
+      buffer,
+      bgbuffer,
+      pixrendered,
+      // Misc
+      requestEndFrame,
+      nmiOk,
+      dummyCycleToggle,
+      nmiCounter,
+      validTileData,
+      scanlineAlreadyRendered,
+    ] = state;
 
-    utils.fromJSON(this, state);
-
-    for (i = 0; i < nameTable.length; i++) {
-      nameTableFromJSON(i, state.nameTable[i]);
+    for (let i = 0; i < nameTable.length; i++) {
+      const s = state.nameTable[i];
+      nameTable[i].tile = s.tile;
+      nameTable[i].attrib = s.attrib;
     }
 
-    for (i = 0; i < ptTile.length; i++) {
+    for (let i = 0; i < ptTile.length; i++) {
       ptTile[i].fromJSON(state.ptTile[i]);
     }
 
     // Sprite data:
-    for (i = 0; i < spriteMem.length; i++) {
+    for (let i = 0; i < spriteMem.length; i++) {
       spriteRamWriteUpdate(i, spriteMem[i]);
     }
   }
@@ -1628,17 +1659,75 @@ export function PPU(
     }
   }
 
-  function nameTableToJSON(i) {
-    return {
-      tile: nameTable[i].tile,
-      attrib: nameTable[i].attrib,
-    };
-  }
+  function doCycles(cycles) {
+    for (; cycles > 0; cycles--) {
+      if (
+        curX === spr0HitX &&
+        f_spVisibility === 1 &&
+        scanline - 21 === spr0HitY
+      ) {
+        // Set sprite 0 hit flag:
+        setStatusFlag(PpuStatus.SPRITE0HIT, true);
+      }
 
-  function nameTableFromJSON(i, s) {
-    nameTable[i].tile = s.tile;
-    nameTable[i].attrib = s.attrib;
+      if (requestEndFrame) {
+        nmiCounter--;
+        if (nmiCounter === 0) {
+          requestEndFrame = false;
+          startVBlank();
+          return 1;
+        }
+      }
+
+      curX++;
+      if (curX === 341) {
+        curX = 0;
+        endScanline();
+      }
+    }
   }
 
   reset();
+
+  return {
+    reset,
+    startFrame,
+    doCycles,
+    setMirroring,
+    toJSON,
+    fromJSON,
+    readStatusRegister,
+    sramLoad,
+    isPixelWhite,
+    updateControlReg1,
+    updateControlReg2,
+    writeSRAMAddress,
+    sramWrite,
+    scrollWrite,
+    writeVRAMAddress,
+    vramWrite,
+    sramDMA,
+    triggerRendering,
+    vramLoad,
+    getVramMem: _ => vramMem,
+    getPtTile: _ => ptTile,
+  };
 };
+
+function getRed(rgb) {
+  return (rgb >> 16) & 0xff;
+}
+
+function getGreen(rgb) {
+  return (rgb >> 8) & 0xff;
+}
+
+function getBlue(rgb) {
+  return rgb & 0xff;
+}
+
+function getRgb(r, g, b) {
+  return (r << 16) | (g << 8) | b;
+}
+
+export default PPU;

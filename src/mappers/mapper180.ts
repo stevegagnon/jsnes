@@ -24,13 +24,13 @@ export function mapper180(nes) {
       }
     },
     loadROM() {
-      if (!nes.rom.valid) {
+      if (!nes.rom.isValid()) {
         throw new Error("Mapper 180: Invalid ROM! Unable to load.");
       }
 
       // Load PRG-ROM:
       mapper.loadRomBank(0, 0x8000);
-      mapper.loadRomBank(nes.rom.romCount - 1, 0xc000);
+      mapper.loadRomBank(nes.rom.getRomCount() - 1, 0xc000);
 
       // Load CHR-ROM:
       mapper.loadCHRROM();

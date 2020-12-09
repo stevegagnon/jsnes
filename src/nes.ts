@@ -1,9 +1,6 @@
 import CPU from './cpu';
-
-var PAPU = require("./papu");
-var ROM = require("./rom");
-
 import PPU from './ppu';
+import PAPU from './papu';
 
 export enum Button {
   A = 0,
@@ -45,19 +42,19 @@ function NES({
     updateStatus: this.opts.onStatusUpdate,
   };
 
-  const cpu = CPU(this);
+  const cpu = CPU({mmap, halt});
 
-  const ppu = new PPU(this);
+  const ppu = PPU({ui, cpu, mmap});
 
-  this.papu = new PAPU(this);
+  this.papu = PAPU({cpu, mmap, preferredFrameRate, onAudioSample});
+
   this.mmap = null; // set in loadROM()
   const controllers = {
     1: new Array(8).fill(0x40),
     2: new Array(8).fill(0x40),
   };
 
-  function stop(message) {
-
+  function halt(message) {
   }
 
   function buttonDown(controller: number, button: number) {
@@ -123,30 +120,8 @@ function NES({
         }
       }
 
-      for (; cycles > 0; cycles--) {
-        if (
-          ppu.curX === ppu.spr0HitX &&
-          ppu.f_spVisibility === 1 &&
-          ppu.scanline - 21 === ppu.spr0HitY
-        ) {
-          // Set sprite 0 hit flag:
-          ppu.setStatusFlag(ppu.STATUS_SPRITE0HIT, true);
-        }
-
-        if (ppu.requestEndFrame) {
-          ppu.nmiCounter--;
-          if (ppu.nmiCounter === 0) {
-            ppu.requestEndFrame = false;
-            ppu.startVBlank();
-            break FRAMELOOP;
-          }
-        }
-
-        ppu.curX++;
-        if (ppu.curX === 341) {
-          ppu.curX = 0;
-          ppu.endScanline();
-        }
+      if (ppu.doCycles(cycles) > 0) {
+        break FRAMELOOP;
       }
     }
     this.fpsFrameCount++;

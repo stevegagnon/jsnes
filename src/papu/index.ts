@@ -2,22 +2,21 @@ import ChannelSquare from './square';
 import ChannelTriangle from './triangle';
 import ChannelNoise from './noise';
 import ChannelDM from './dmc';
+import { Irq } from '../cpu';
 
 const CPU_FREQ_NTSC = 1789772.5; //1789772.72727272d;
 
-export function PAPU(nes) {
+export function PAPU({cpu, mmap, preferredFrameRate, onAudioSample, sampleRate = 44100}) {
   let square1 = ChannelSquare({ getLengthMax }, true);
   let square2 = ChannelSquare({ getLengthMax }, false);
   let triangle = ChannelTriangle({ getLengthMax });
   let noise = ChannelNoise({ getLengthMax, getNoiseWaveLength });
-  let dmc = ChannelDM({ getDmcFrequency, cpu: nes.cpu, mmap: nes.nmap });
+  let dmc = ChannelDM({ getDmcFrequency, cpu, mmap });
 
   let frameIrqCounter = null;
   let frameIrqCounterMax = 4;
   let initCounter = 2048;
   let channelEnableValue = null;
-
-  let sampleRate = 44100;
 
   let lengthLookup = null;
   let dmcFreqLookup = null;
@@ -99,14 +98,13 @@ export function PAPU(nes) {
   reset();
 
   function reset() {
-    sampleRate = nes.opts.sampleRate;
     sampleTimerMax = Math.floor(
-      (1024.0 * CPU_FREQ_NTSC * nes.opts.preferredFrameRate) /
+      (1024.0 * CPU_FREQ_NTSC * preferredFrameRate) /
       (sampleRate * 60.0)
     );
 
     frameTime = Math.floor(
-      (14915.0 * nes.opts.preferredFrameRate) / 60.0
+      (14915.0 * preferredFrameRate) / 60.0
     );
 
     sampleTimer = 0;
@@ -375,7 +373,7 @@ export function PAPU(nes) {
 
     // Frame IRQ handling:
     if (frameIrqEnabled && frameIrqActive) {
-      nes.cpu.requestIrq(nes.cpu.IRQ_NORMAL);
+      cpu.requestIrq(Irq.Normal);
     }
 
     // Clock frame counter at double CPU speed:
@@ -557,8 +555,8 @@ export function PAPU(nes) {
       minSample = sampleValueL;
     }
 
-    if (nes.opts.onAudioSample) {
-      nes.opts.onAudioSample(sampleValueL / 32768, sampleValueR / 32768);
+    if (onAudioSample) {
+      onAudioSample(sampleValueL / 32768, sampleValueR / 32768);
     }
 
     // Reset sampled values:
@@ -719,3 +717,5 @@ export function PAPU(nes) {
     dcValue = dacRange / 2;
   }
 }
+
+export default PAPU;

@@ -8,7 +8,7 @@ export enum Irq {
   Reset = 2,
 }
 
-export function CPU(mmap, halt) {
+export function CPU({ mmap, halt }) {
   const JSON_PROPERTIES = [
     "mem",
     "cyclesToHalt",

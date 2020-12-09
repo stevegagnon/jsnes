@@ -1,6 +1,4 @@
 
-
-
 export function Tile() {
   let pix = new Array(64);
   let opaque = new Array(8);
@@ -18,12 +16,11 @@ export function Tile() {
   let c = null;
   let initialized = false;
 
- 
-  function setBuffer(scanline) {
-    for (y = 0; y < 8; y++) {
-      setScanline(y, scanline[y], scanline[y + 8]);
-    }
-  }
+  // function setBuffer(scanline) {
+  //   for (y = 0; y < 8; y++) {
+  //     setScanline(y, scanline[y], scanline[y + 8]);
+  //   }
+  // }
 
   function setScanline(sline, b1, b2) {
     initialized = true;
@@ -185,14 +182,16 @@ export function Tile() {
 
   function toJSON() {
     return {
-      opaque: opaque,
-      pix: pix,
+      opaque,
+      pix,
     };
   }
 
   function fromJSON(s) {
-    opaque = s.opaque;
-    pix = s.pix;
+    [
+      opaque,
+      pix
+    ] = s;
   }
 
   return {

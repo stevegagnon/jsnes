@@ -1,4 +1,9 @@
-import { copyArrayElements } from '../utils';
+
+function copyArrayElements(src, srcPos, dest, destPos, length) {
+  for (var i = 0; i < length; ++i) {
+    dest[destPos + i] = src[srcPos + i];
+  }
+}
 
 export function mapper00(nes) {
   let joy1StrobeState = 0;
@@ -326,7 +331,7 @@ export function mapper00(nes) {
   }
 
   function loadROM() {
-    if (!nes.rom.valid || nes.rom.romCount < 1) {
+    if (!nes.rom.isValid() || nes.rom.getRomCount() < 1) {
       throw new Error("NoMapper: Invalid ROM! Unable to load.");
     }
 
@@ -345,7 +350,7 @@ export function mapper00(nes) {
   }
 
   function loadPRGROM() {
-    if (nes.rom.romCount > 1) {
+    if (nes.rom.getRomCount() > 1) {
       // Load the two first banks into memory.
       loadRomBank(0, 0x8000);
       loadRomBank(1, 0xc000);
@@ -358,8 +363,8 @@ export function mapper00(nes) {
 
   function loadCHRROM() {
     // console.log("Loading CHR ROM..");
-    if (nes.rom.vromCount > 0) {
-      if (nes.rom.vromCount === 1) {
+    if (nes.rom.getVRomCount() > 0) {
+      if (nes.rom.getVRomCount() === 1) {
         loadVromBank(0, 0x0000);
         loadVromBank(0, 0x1000);
       } else {
@@ -372,8 +377,8 @@ export function mapper00(nes) {
   }
 
   function loadBatteryRam() {
-    if (nes.rom.batteryRam) {
-      var ram = nes.rom.batteryRam;
+    if (nes.rom.getBatteryRom()) {
+      var ram = nes.rom.getBatteryRom();
       if (ram !== null && ram.length === 0x2000) {
         // Load Battery RAM into memory:
         copyArrayElements(ram, 0, nes.cpu.mem, 0x6000, 0x2000);
@@ -383,11 +388,11 @@ export function mapper00(nes) {
 
   function loadRomBank(bank, address) {
     // Loads a ROM bank into the specified address.
-    bank %= nes.rom.romCount;
-    //var data = nes.rom.rom[bank];
+    bank %= nes.rom.getRomCount();
+    //var data = nes.rom.getRom(bank);
     //cpuMem.write(address,data,data.length);
     copyArrayElements(
-      nes.rom.rom[bank],
+      nes.rom.getRom(bank),
       0,
       nes.cpu.mem,
       address,
@@ -396,102 +401,102 @@ export function mapper00(nes) {
   }
 
   function loadVromBank(bank, address) {
-    if (nes.rom.vromCount === 0) {
+    if (nes.rom.getVRomCount() === 0) {
       return;
     }
     nes.ppu.triggerRendering();
 
     copyArrayElements(
-      nes.rom.vrom[bank % nes.rom.vromCount],
+      nes.rom.getVRom(bank % nes.rom.getVRomCount()),
       0,
-      nes.ppu.vramMem,
+      nes.ppu.getVramMem(),
       address,
       4096
     );
 
-    var vromTile = nes.rom.vromTile[bank % nes.rom.vromCount];
+    var vromTile = nes.rom.getVRomTile(bank % nes.rom.getVRomCount());
     copyArrayElements(
       vromTile,
       0,
-      nes.ppu.ptTile,
+      nes.ppu.getPtTile(),
       address >> 4,
       256
     );
   }
 
   function load32kRomBank(bank, address) {
-    loadRomBank((bank * 2) % nes.rom.romCount, address);
-    loadRomBank((bank * 2 + 1) % nes.rom.romCount, address + 16384);
+    loadRomBank((bank * 2) % nes.rom.getRomCount(), address);
+    loadRomBank((bank * 2 + 1) % nes.rom.getRomCount(), address + 16384);
   }
 
   function load8kVromBank(bank4kStart, address) {
-    if (nes.rom.vromCount === 0) {
+    if (nes.rom.getVRomCount() === 0) {
       return;
     }
     nes.ppu.triggerRendering();
 
-    loadVromBank(bank4kStart % nes.rom.vromCount, address);
+    loadVromBank(bank4kStart % nes.rom.getVRomCount(), address);
     loadVromBank(
-      (bank4kStart + 1) % nes.rom.vromCount,
+      (bank4kStart + 1) % nes.rom.getVRomCount(),
       address + 4096
     );
   }
 
   function load1kVromBank(bank1k, address) {
-    if (nes.rom.vromCount === 0) {
+    if (nes.rom.getVRomCount() === 0) {
       return;
     }
     nes.ppu.triggerRendering();
 
-    var bank4k = Math.floor(bank1k / 4) % nes.rom.vromCount;
+    var bank4k = Math.floor(bank1k / 4) % nes.rom.getVRomCount();
     var bankoffset = (bank1k % 4) * 1024;
     copyArrayElements(
-      nes.rom.vrom[bank4k],
+      nes.rom.getVRom(bank4k),
       bankoffset,
-      nes.ppu.vramMem,
+      nes.ppu.getVramMem(),
       address,
       1024
     );
 
     // Update tiles:
-    var vromTile = nes.rom.vromTile[bank4k];
+    var vromTile = nes.rom.getVRomTile(bank4k);
     var baseIndex = address >> 4;
     for (var i = 0; i < 64; i++) {
-      nes.ppu.ptTile[baseIndex + i] = vromTile[(bank1k % 4 << 6) + i];
+      nes.ppu.getPtTile()[baseIndex + i] = vromTile[(bank1k % 4 << 6) + i];
     }
   }
 
   function load2kVromBank(bank2k, address) {
-    if (nes.rom.vromCount === 0) {
+    if (nes.rom.getVRomCount() === 0) {
       return;
     }
     nes.ppu.triggerRendering();
 
-    var bank4k = Math.floor(bank2k / 2) % nes.rom.vromCount;
+    var bank4k = Math.floor(bank2k / 2) % nes.rom.getVRomCount();
     var bankoffset = (bank2k % 2) * 2048;
     copyArrayElements(
-      nes.rom.vrom[bank4k],
+      nes.rom.getVRom(bank4k),
       bankoffset,
-      nes.ppu.vramMem,
+      nes.ppu.getVramMem(),
       address,
       2048
     );
 
     // Update tiles:
-    var vromTile = nes.rom.vromTile[bank4k];
+    var vromTile = nes.rom.getVRomTile(bank4k);
     var baseIndex = address >> 4;
     for (var i = 0; i < 128; i++) {
-      nes.ppu.ptTile[baseIndex + i] = vromTile[(bank2k % 2 << 7) + i];
+      nes.ppu.getPtTile()[baseIndex + i] = vromTile[(bank2k % 2 << 7) + i];
     }
   }
 
   function load8kRomBank (bank8k, address) {
-    var bank16k = Math.floor(bank8k / 2) % nes.rom.romCount;
+    var bank16k = Math.floor(bank8k / 2) % nes.rom.getRomCount();
     var offset = (bank8k % 2) * 8192;
 
-    //nes.cpu.mem.write(address,nes.rom.rom[bank16k],offset,8192);
+    //nes.cpu.mem.write(address,nes.rom.getRom(bank16k),offset,8192);
     copyArrayElements(
-      nes.rom.rom[bank16k],
+      nes.rom.getRom(bank16k),
       offset,
       nes.cpu.mem,
       address,

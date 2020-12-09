@@ -85,9 +85,9 @@ export function mapper004(nes) {
         if (prgAddressChanged) {
           // Load the two hardwired banks:
           if (prgAddressSelect === 0) {
-            mapper.load8kRomBank((nes.rom.romCount - 1) * 2, 0xc000);
+            mapper.load8kRomBank((nes.rom.getRomCount() - 1) * 2, 0xc000);
           } else {
-            mapper.load8kRomBank((nes.rom.romCount - 1) * 2, 0x8000);
+            mapper.load8kRomBank((nes.rom.getRomCount() - 1) * 2, 0x8000);
           }
           prgAddressChanged = false;
         }
@@ -108,9 +108,9 @@ export function mapper004(nes) {
         if (prgAddressChanged) {
           // Load the two hardwired banks:
           if (prgAddressSelect === 0) {
-            mapper.load8kRomBank((nes.rom.romCount - 1) * 2, 0xc000);
+            mapper.load8kRomBank((nes.rom.getRomCount() - 1) * 2, 0xc000);
           } else {
-            mapper.load8kRomBank((nes.rom.romCount - 1) * 2, 0x8000);
+            mapper.load8kRomBank((nes.rom.getRomCount() - 1) * 2, 0x8000);
           }
           prgAddressChanged = false;
         }
@@ -188,13 +188,13 @@ export function mapper004(nes) {
       }
     },
     loadROM() {
-      if (!nes.rom.valid) {
+      if (!nes.rom.isValid()) {
         throw new Error("MMC3: Invalid ROM! Unable to load.");
       }
 
       // Load hardwired PRG banks (0xC000 and 0xE000):
-      mapper.load8kRomBank((nes.rom.romCount - 1) * 2, 0xc000);
-      mapper.load8kRomBank((nes.rom.romCount - 1) * 2 + 1, 0xe000);
+      mapper.load8kRomBank((nes.rom.getRomCount() - 1) * 2, 0xc000);
+      mapper.load8kRomBank((nes.rom.getRomCount() - 1) * 2 + 1, 0xe000);
 
       // Load swappable PRG banks (0x8000 and 0xA000):
       mapper.load8kRomBank(0, 0x8000);
@@ -215,7 +215,7 @@ export function mapper004(nes) {
         if (irqCounter < 0) {
           // Trigger IRQ:
           //nes.getCpu().doIrq();
-          nes.cpu.requestIrq(nes.cpu.IRQ_NORMAL);
+          nes.cpu.requestIrq(Irq.Normal);
           irqCounter = irqLatchValue;
         }
       }

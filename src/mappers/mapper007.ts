@@ -1,5 +1,6 @@
 import mapper000 from './mapper000';
 import { Irq } from '../cpu';
+import { RomFlags } from '../rom';
 
 /**
  * Mapper007 (AxROM)
@@ -18,14 +19,14 @@ export function mapper007(nes) {
       } else {
         mapper.load32kRomBank(value & 0x7, 0x8000);
         if (value & 0x10) {
-          nes.ppu.setMirroring(nes.rom.SINGLESCREEN_MIRRORING2);
+          nes.ppu.setMirroring(RomFlags.SINGLESCREEN_MIRRORING2);
         } else {
-          nes.ppu.setMirroring(nes.rom.SINGLESCREEN_MIRRORING);
+          nes.ppu.setMirroring(RomFlags.SINGLESCREEN_MIRRORING);
         }
       }
     },
     loadROM() {
-      if (!nes.rom.valid) {
+      if (!nes.rom.isValid()) {
         throw new Error("AOROM: Invalid ROM! Unable to load.");
       }
 

@@ -1,7 +1,7 @@
-import Mappers from './mappers';
+import {Mappers, getMapperName} from './mappers';
 import Tile from './tile';
 
-export enum Flags {
+export enum RomFlags {
   VERTICAL_MIRRORING = 0,
   HORIZONTAL_MIRRORING = 1,
   FOURSCREEN_MIRRORING = 2,
@@ -11,48 +11,6 @@ export enum Flags {
   SINGLESCREEN_MIRRORING4 = 6,
   CHRROM_MIRRORING = 7,
 }
-
-const mapperName = [];
-
-mapperName[0] = "Direct Access";
-mapperName[1] = "Nintendo MMC1";
-mapperName[2] = "UNROM";
-mapperName[3] = "CNROM";
-mapperName[4] = "Nintendo MMC3";
-mapperName[5] = "Nintendo MMC5";
-mapperName[6] = "FFE F4xxx";
-mapperName[7] = "AOROM";
-mapperName[8] = "FFE F3xxx";
-mapperName[9] = "Nintendo MMC2";
-mapperName[10] = "Nintendo MMC4";
-mapperName[11] = "Color Dreams Chip";
-mapperName[12] = "FFE F6xxx";
-mapperName[15] = "100-in-1 switch";
-mapperName[16] = "Bandai chip";
-mapperName[17] = "FFE F8xxx";
-mapperName[18] = "Jaleco SS8806 chip";
-mapperName[19] = "Namcot 106 chip";
-mapperName[20] = "Famicom Disk System";
-mapperName[21] = "Konami VRC4a";
-mapperName[22] = "Konami VRC2a";
-mapperName[23] = "Konami VRC2a";
-mapperName[24] = "Konami VRC6";
-mapperName[25] = "Konami VRC4b";
-mapperName[32] = "Irem G-101 chip";
-mapperName[33] = "Taito TC0190/TC0350";
-mapperName[34] = "32kB ROM switch";
-
-mapperName[64] = "Tengen RAMBO-1 chip";
-mapperName[65] = "Irem H-3001 chip";
-mapperName[66] = "GNROM switch";
-mapperName[67] = "SunSoft3 chip";
-mapperName[68] = "SunSoft4 chip";
-mapperName[69] = "SunSoft5 FME-7 chip";
-mapperName[71] = "Camerica chip";
-mapperName[78] = "Irem 74HC161/32-based";
-mapperName[91] = "Pirate HK-SF3 chip";
-
-
 
 export function ROM(nes) {
   let header = null;
@@ -161,36 +119,49 @@ export function ROM(nes) {
     valid = true;
   }
 
-
   function getMirroringType() {
     if (fourScreen) {
-      return Flags.FOURSCREEN_MIRRORING;
+      return RomFlags.FOURSCREEN_MIRRORING;
     }
     if (mirroring === 0) {
-      return Flags.HORIZONTAL_MIRRORING;
+      return RomFlags.HORIZONTAL_MIRRORING;
     }
-    return Flags.VERTICAL_MIRRORING;
-  }
-
-  function getMapperName() {
-    return mapperName[mapperType] ?? `Unknown Mapper, ${mapperType}`;
-  }
-
-  function mapperSupported() {
-    return typeof Mappers[mapperType] !== "undefined";
+    return RomFlags.VERTICAL_MIRRORING;
   }
 
   function createMapper() {
-    if (mapperSupported()) {
+    if (Mappers[mapperType]) {
       return new Mappers[mapperType](nes);
     } else {
-      throw new Error(
-        "This ROM uses a mapper not supported by JSNES: " +
-        getMapperName() +
-        "(" +
-        mapperType +
-        ")"
-      );
+      const name = getMapperName(mapperType);
+      throw new Error(`ROM not supported: ${name}(${mapperType})`);
     }
   }
+
+  return {
+    load,
+    getMirroringType,
+    createMapper,
+    isValid() {
+      return valid;
+    },
+    getBatteryRom() {
+      return batteryRam;
+    },
+    getRomCount() {
+      return romCount;
+    },
+    getVRomCount() {
+      return vromCount;
+    },
+    getRom(bank) {
+      return rom[bank];
+    },
+    getVRom(bank) {
+      return vrom[bank];
+    },
+    getVRomTile(bank) {
+      return vromTile[bank];
+    }
+  };
 };

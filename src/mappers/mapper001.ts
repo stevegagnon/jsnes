@@ -2,6 +2,7 @@
 
 import mapper000 from './mapper000';
 import { Irq } from '../cpu';
+import { RomFlags } from '../rom';
 
 export function mapper001(nes) {
   let regBuffer = 0;
@@ -48,12 +49,12 @@ export function mapper001(nes) {
           this.mirroring = tmp;
           if ((this.mirroring & 2) === 0) {
             // SingleScreen mirroring overrides the other setting:
-            this.nes.ppu.setMirroring(this.nes.rom.SINGLESCREEN_MIRRORING);
+            this.nes.ppu.setMirroring(RomFlags.SINGLESCREEN_MIRRORING);
           } else if ((this.mirroring & 1) !== 0) {
             // Not overridden by SingleScreen mirroring.
-            this.nes.ppu.setMirroring(this.nes.rom.HORIZONTAL_MIRRORING);
+            this.nes.ppu.setMirroring(RomFlags.HORIZONTAL_MIRRORING);
           } else {
-            this.nes.ppu.setMirroring(this.nes.rom.VERTICAL_MIRRORING);
+            this.nes.ppu.setMirroring(RomFlags.VERTICAL_MIRRORING);
           }
         }
 
@@ -73,7 +74,7 @@ export function mapper001(nes) {
         this.romSelectionReg0 = (value >> 4) & 1;
 
         // Check whether the cart has VROM:
-        if (this.nes.rom.vromCount > 0) {
+        if (this.nes.rom.getVRomCount() > 0) {
           // Select VROM bank at 0x0000:
           if (this.vromSwitchingSize === 0) {
             // Swap 8kB VROM:
@@ -81,7 +82,7 @@ export function mapper001(nes) {
               this.load8kVromBank(value & 0xf, 0x0000);
             } else {
               this.load8kVromBank(
-                Math.floor(this.nes.rom.vromCount / 2) + (value & 0xf),
+                Math.floor(this.nes.rom.getVRomCount() / 2) + (value & 0xf),
                 0x0000
               );
             }
@@ -91,7 +92,7 @@ export function mapper001(nes) {
               this.loadVromBank(value & 0xf, 0x0000);
             } else {
               this.loadVromBank(
-                Math.floor(this.nes.rom.vromCount / 2) + (value & 0xf),
+                Math.floor(this.nes.rom.getVRomCount() / 2) + (value & 0xf),
                 0x0000
               );
             }
@@ -105,7 +106,7 @@ export function mapper001(nes) {
         this.romSelectionReg1 = (value >> 4) & 1;
 
         // Check whether the cart has VROM:
-        if (this.nes.rom.vromCount > 0) {
+        if (this.nes.rom.getVRomCount() > 0) {
           // Select VROM bank at 0x1000:
           if (this.vromSwitchingSize === 1) {
             // Swap 4kB of VROM:
@@ -113,7 +114,7 @@ export function mapper001(nes) {
               this.loadVromBank(value & 0xf, 0x1000);
             } else {
               this.loadVromBank(
-                Math.floor(this.nes.rom.vromCount / 2) + (value & 0xf),
+                Math.floor(this.nes.rom.getVRomCount() / 2) + (value & 0xf),
                 0x1000
               );
             }
@@ -128,7 +129,7 @@ export function mapper001(nes) {
         var bank;
         var baseBank = 0;
 
-        if (this.nes.rom.romCount >= 32) {
+        if (this.nes.rom.getRomCount() >= 32) {
           // 1024 kB cart
           if (this.vromSwitchingSize === 0) {
             if (this.romSelectionReg0 === 1) {
@@ -138,7 +139,7 @@ export function mapper001(nes) {
             baseBank =
               (this.romSelectionReg0 | (this.romSelectionReg1 << 1)) << 3;
           }
-        } else if (this.nes.rom.romCount >= 16) {
+        } else if (this.nes.rom.getRomCount() >= 16) {
           // 512 kB cart
           if (this.romSelectionReg0 === 1) {
             baseBank = 8;
@@ -212,13 +213,13 @@ export function mapper001(nes) {
       }
     },
     loadROM() {
-      if (!nes.rom.valid) {
+      if (!nes.rom.isValid()) {
         throw new Error("MMC1: Invalid ROM! Unable to load.");
       }
     
       // Load PRG-ROM:
       mapper.loadRomBank(0, 0x8000); //   First ROM bank..
-      mapper.loadRomBank(this.nes.rom.romCount - 1, 0xc000); // ..and last ROM bank.
+      mapper.loadRomBank(this.nes.rom.getRomCount() - 1, 0xc000); // ..and last ROM bank.
     
       // Load CHR-ROM:
       mapper.loadCHRROM();
