@@ -128,6 +128,25 @@ export function ChannelTriangle({ getLengthMax }) {
       lengthCounter > 0;
   }
 
+  function accSample(cycles, triValue) {
+    if (sampleCondition) {
+      triValue = Math.floor(
+        (progTimerCount << 4) / (progTimerMax + 1)
+      );
+      if (triValue > 16) {
+        triValue = 16;
+      }
+      if (triangleCounter >= 16) {
+        triValue = 16 - triValue;
+      }
+
+      // Add non-interpolated sample value:
+      triValue += sampleValue;
+    }
+
+    return triValue;
+  }
+
   return {
     reset,
     clockLengthCounter,
@@ -138,7 +157,9 @@ export function ChannelTriangle({ getLengthMax }) {
     clockProgrammableTimer,
     clockTriangleGenerator,
     setEnabled,
-    updateSampleCondition
+    updateSampleCondition,
+    accSample,
+    getSampleValue: () => sampleValue
   };
 }
 

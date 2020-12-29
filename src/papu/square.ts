@@ -206,6 +206,7 @@ export function ChannelSquare({ getLengthMax }, sqr1) {
     writeReg,
     clockEnvDecay,
     setEnabled,
+    getSampleValue: () => sampleValue
   };
 }
 

@@ -183,6 +183,9 @@ function ChannelDM({ getDmcFrequency, cpu, mmap }) {
     setEnabled,
     getLengthStatus,
     getIrqStatus,
+    setIrqGenerated: v => irqGenerated = v,
+    getSample: () => sample,
+    
   };
 }
 

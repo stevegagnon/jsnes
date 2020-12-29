@@ -117,6 +117,15 @@ export function ChannelNoise({ getLengthMax, getNoiseWaveLength }) {
     return lengthCounter === 0 || !isEnabled ? 0 : 1;
   }
 
+  function acc() {
+    var smpNoise = Math.floor((accValue << 4) / accValue);
+
+    accValue = smpNoise >> 4;
+    accCount = 1;
+
+    return accValue;
+  }
+
   return {
     reset,
     clockLengthCounter,
@@ -125,6 +134,7 @@ export function ChannelNoise({ getLengthMax, getNoiseWaveLength }) {
     writeReg,
     setEnabled,
     getLengthStatus,
+    acc
   };
 }
 

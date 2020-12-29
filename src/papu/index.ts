@@ -159,7 +159,7 @@ export function PAPU({cpu, mmap, preferredFrameRate, onAudioSample, sampleRate =
     tmp |= dmc.getIrqStatus() << 7;
 
     frameIrqActive = false;
-    dmc.irqGenerated = false;
+    dmc.setIrqGenerated(false);
 
     return tmp & 0xffff;
   }
@@ -398,39 +398,26 @@ export function PAPU({cpu, mmap, preferredFrameRate, onAudioSample, sampleRate =
 
   function accSample(cycles) {
     // Special treatment for triangle channel - need to interpolate.
-    if (triangle.sampleCondition) {
-      triValue = Math.floor(
-        (triangle.progTimerCount << 4) / (triangle.progTimerMax + 1)
-      );
-      if (triValue > 16) {
-        triValue = 16;
-      }
-      if (triangle.triangleCounter >= 16) {
-        triValue = 16 - triValue;
-      }
-
-      // Add non-interpolated sample value:
-      triValue += triangle.sampleValue;
-    }
+    triValue = triangle.accSample(cycles, triValue);
 
     // Now sample normally:
     if (cycles === 2) {
       smpTriangle += triValue << 1;
-      smpDmc += dmc.sample << 1;
-      smpSquare1 += square1.sampleValue << 1;
-      smpSquare2 += square2.sampleValue << 1;
+      smpDmc += dmc.getSample() << 1;
+      smpSquare1 += square1.getSampleValue() << 1;
+      smpSquare2 += square2.getSampleValue() << 1;
       accCount += 2;
     } else if (cycles === 4) {
       smpTriangle += triValue << 2;
-      smpDmc += dmc.sample << 2;
-      smpSquare1 += square1.sampleValue << 2;
-      smpSquare2 += square2.sampleValue << 2;
+      smpDmc += dmc.getSample() << 2;
+      smpSquare1 += square1.getSampleValue() << 2;
+      smpSquare2 += square2.getSampleValue() << 2;
       accCount += 4;
     } else {
       smpTriangle += cycles * triValue;
-      smpDmc += cycles * dmc.sample;
-      smpSquare1 += cycles * square1.sampleValue;
-      smpSquare2 += cycles * square2.sampleValue;
+      smpDmc += cycles * dmc.getSample();
+      smpSquare1 += cycles * square1.getSampleValue();
+      smpSquare2 += cycles * square2.getSampleValue();
       accCount += cycles;
     }
   }
