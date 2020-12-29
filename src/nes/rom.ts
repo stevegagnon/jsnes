@@ -165,3 +165,5 @@ export function ROM(nes) {
     }
   };
 };
+
+export default ROM;

@@ -1,6 +1,3 @@
-import { CpuInfo } from "os";
-
-let utils = require("./utils");
 
 export enum Irq {
   Normal = 0,
@@ -9,33 +6,6 @@ export enum Irq {
 }
 
 export function CPU({ mmap, halt }) {
-  const JSON_PROPERTIES = [
-    "mem",
-    "cyclesToHalt",
-    "irqRequested",
-    "irqType",
-    // Registers
-    "REG_ACC",
-    "REG_X",
-    "REG_Y",
-    "REG_SP",
-    "REG_PC",
-    "REG_PC_NEW",
-    "REG_STATUS",
-    // Status
-    "F_CARRY",
-    "F_DECIMAL",
-    "F_INTERRUPT",
-    "F_INTERRUPT_NEW",
-    "F_OVERFLOW",
-    "F_SIGN",
-    "F_ZERO",
-    "F_NOTUSED",
-    "F_NOTUSED_NEW",
-    "F_BRK",
-    "F_BRK_NEW",
-  ]
-
   // Keep Chrome happy
   let mem = null;
   let REG_ACC = null;
@@ -1400,7 +1370,101 @@ export function CPU({ mmap, halt }) {
     F_SIGN = (st >> 7) & 1;
   }
 
+  function frameLoop(papu) {
+    let cycles = 0;
 
+    if (cyclesToHalt === 0) {
+      // Execute a CPU instruction
+      cycles = emulate();
+      if (papu) {
+        papu.clockFrameCounter(cycles);
+      }
+      cycles *= 3;
+    } else {
+      if (cyclesToHalt > 8) {
+        cycles = 24;
+        if (papu) {
+          papu.clockFrameCounter(8);
+        }
+        cyclesToHalt -= 8;
+      } else {
+        cycles = cyclesToHalt * 3;
+        if (papu) {
+          papu.clockFrameCounter(cyclesToHalt);
+        }
+        cyclesToHalt = 0;
+      }
+    }
+
+    return cycles;
+  }
+
+
+  
+  function toJSON() {
+    return {
+      mem,
+      cyclesToHalt,
+      irqRequested,
+      irqType,
+      // Registers
+      REG_ACC,
+      REG_X,
+      REG_Y,
+      REG_SP,
+      REG_PC,
+      REG_PC_NEW,
+      REG_STATUS,
+      // Status
+      F_CARRY,
+      F_DECIMAL,
+      F_INTERRUPT,
+      F_INTERRUPT_NEW,
+      F_OVERFLOW,
+      F_SIGN,
+      F_ZERO,
+      F_NOTUSED,
+      F_NOTUSED_NEW,
+      F_BRK,
+      F_BRK_NEW,
+    };
+  }
+
+  function fromJSON(state) {
+    [
+      mem,
+      cyclesToHalt,
+      irqRequested,
+      irqType,
+      // Registers
+      REG_ACC,
+      REG_X,
+      REG_Y,
+      REG_SP,
+      REG_PC,
+      REG_PC_NEW,
+      REG_STATUS,
+      // Status
+      F_CARRY,
+      F_DECIMAL,
+      F_INTERRUPT,
+      F_INTERRUPT_NEW,
+      F_OVERFLOW,
+      F_SIGN,
+      F_ZERO,
+      F_NOTUSED,
+      F_NOTUSED_NEW,
+      F_BRK,
+      F_BRK_NEW,
+    ] = state;
+  }
+
+  return {
+    reset,
+    frameLoop,
+    toJSON,
+    fromJSON,
+  };
 }
 
 

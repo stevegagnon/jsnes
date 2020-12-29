@@ -472,15 +472,13 @@ export function PAPU({cpu, mmap, preferredFrameRate, onAudioSample, sampleRate =
 
       accCount = 0;
     } else {
-      smpSquare1 = square1.sampleValue << 4;
-      smpSquare2 = square2.sampleValue << 4;
-      smpTriangle = triangle.sampleValue;
-      smpDmc = dmc.sample << 4;
+      smpSquare1 = square1.getSampleValue() << 4;
+      smpSquare2 = square2.getSampleValue() << 4;
+      smpTriangle = triangle.getSampleValue();
+      smpDmc = dmc.getSample() << 4;
     }
 
-    var smpNoise = Math.floor((noise.accValue << 4) / noise.accCount);
-    noise.accValue = smpNoise >> 4;
-    noise.accCount = 1;
+    var smpNoise = noise.acc();
 
     // Stereo sound.
 
@@ -703,6 +701,10 @@ export function PAPU({cpu, mmap, preferredFrameRate, onAudioSample, sampleRate =
     dacRange = max_sqr + max_tnd;
     dcValue = dacRange / 2;
   }
+
+  return {
+    reset,
+  };
 }
 
 export default PAPU;

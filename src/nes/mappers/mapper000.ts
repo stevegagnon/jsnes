@@ -32,7 +32,7 @@ export function mapper00(nes) {
       nes.cpu.mem[address] = value;
       if (address >= 0x6000 && address < 0x8000) {
         // Write to persistent RAM
-        nes.opts.onBatteryRamWrite(address, value);
+        nes.onBatteryRamWrite(address, value);
       }
     } else if (address > 0x2007 && address < 0x4000) {
       regWrite(0x2000 + (address & 0x7), value);

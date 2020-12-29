@@ -1,0 +1,21 @@
+{
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "lib": [
+      "esnext",
+      "dom"
+    ],
+    "target": "esnext",
+    "moduleResolution": "node",
+    "baseUrl": "./src/",
+    "noEmit": true,
+    "paths": {
+      "@nes/*": [
+        "nes/*"
+      ],
+    }
+  }
+}
