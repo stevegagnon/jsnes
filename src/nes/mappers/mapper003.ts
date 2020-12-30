@@ -22,7 +22,7 @@ export function mapper003(nes, opts) {
         // Swap in the given ROM bank at 0x8000:
         // This is a VROM bank select command.
         // Swap in the given VROM bank at 0x0000:
-        var bank = (value % (this.nes.rom.getVRomCount() / 2)) * 2;
+        var bank = (value % (nes.rom.getVRomCount() / 2)) * 2;
         mapper.loadVromBank(bank, 0x0000);
         mapper.loadVromBank(bank + 1, 0x1000);
         mapper.load8kVromBank(value * 2, 0x0000);

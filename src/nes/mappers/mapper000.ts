@@ -7,7 +7,7 @@ function copyArrayElements(src, srcPos, dest, destPos, length) {
   }
 }
 
-export function mapper00(nes, { onBatteryRamWrite }) {
+export function mapper00(nes, { onBatteryRamWrite = (address, value) => undefined }) {
   let joy1StrobeState = 0;
   let joy2StrobeState = 0;
   let joypadLastWrite = 0;

@@ -5,6 +5,7 @@ import { Irq } from '../cpu';
 import { RomFlags } from '../rom';
 
 export function mapper001(nes, opts) {
+  const mapper = mapper000(nes, opts);
   let regBuffer = 0;
   let regBufferCounter = 0;
 
@@ -44,55 +45,55 @@ export function mapper001(nes, opts) {
       case 0:
         // Mirroring:
         tmp = value & 3;
-        if (tmp !== this.mirroring) {
+        if (tmp !== mirroring) {
           // Set mirroring:
-          this.mirroring = tmp;
-          if ((this.mirroring & 2) === 0) {
+          mirroring = tmp;
+          if ((mirroring & 2) === 0) {
             // SingleScreen mirroring overrides the other setting:
-            this.nes.ppu.setMirroring(RomFlags.SINGLESCREEN_MIRRORING);
-          } else if ((this.mirroring & 1) !== 0) {
+            nes.ppu.setMirroring(RomFlags.SINGLESCREEN_MIRRORING);
+          } else if ((mirroring & 1) !== 0) {
             // Not overridden by SingleScreen mirroring.
-            this.nes.ppu.setMirroring(RomFlags.HORIZONTAL_MIRRORING);
+            nes.ppu.setMirroring(RomFlags.HORIZONTAL_MIRRORING);
           } else {
-            this.nes.ppu.setMirroring(RomFlags.VERTICAL_MIRRORING);
+            nes.ppu.setMirroring(RomFlags.VERTICAL_MIRRORING);
           }
         }
 
         // PRG Switching Area;
-        this.prgSwitchingArea = (value >> 2) & 1;
+        prgSwitchingArea = (value >> 2) & 1;
 
         // PRG Switching Size:
-        this.prgSwitchingSize = (value >> 3) & 1;
+        prgSwitchingSize = (value >> 3) & 1;
 
         // VROM Switching Size:
-        this.vromSwitchingSize = (value >> 4) & 1;
+        vromSwitchingSize = (value >> 4) & 1;
 
         break;
 
       case 1:
         // ROM selection:
-        this.romSelectionReg0 = (value >> 4) & 1;
+        romSelectionReg0 = (value >> 4) & 1;
 
         // Check whether the cart has VROM:
-        if (this.nes.rom.getVRomCount() > 0) {
+        if (nes.rom.getVRomCount() > 0) {
           // Select VROM bank at 0x0000:
-          if (this.vromSwitchingSize === 0) {
+          if (vromSwitchingSize === 0) {
             // Swap 8kB VROM:
-            if (this.romSelectionReg0 === 0) {
-              this.load8kVromBank(value & 0xf, 0x0000);
+            if (romSelectionReg0 === 0) {
+              mapper.load8kVromBank(value & 0xf, 0x0000);
             } else {
-              this.load8kVromBank(
-                Math.floor(this.nes.rom.getVRomCount() / 2) + (value & 0xf),
+              mapper.load8kVromBank(
+                Math.floor(nes.rom.getVRomCount() / 2) + (value & 0xf),
                 0x0000
               );
             }
           } else {
             // Swap 4kB VROM:
-            if (this.romSelectionReg0 === 0) {
-              this.loadVromBank(value & 0xf, 0x0000);
+            if (romSelectionReg0 === 0) {
+              mapper.loadVromBank(value & 0xf, 0x0000);
             } else {
-              this.loadVromBank(
-                Math.floor(this.nes.rom.getVRomCount() / 2) + (value & 0xf),
+              mapper.loadVromBank(
+                Math.floor(nes.rom.getVRomCount() / 2) + (value & 0xf),
                 0x0000
               );
             }
@@ -103,18 +104,18 @@ export function mapper001(nes, opts) {
 
       case 2:
         // ROM selection:
-        this.romSelectionReg1 = (value >> 4) & 1;
+        romSelectionReg1 = (value >> 4) & 1;
 
         // Check whether the cart has VROM:
-        if (this.nes.rom.getVRomCount() > 0) {
+        if (nes.rom.getVRomCount() > 0) {
           // Select VROM bank at 0x1000:
-          if (this.vromSwitchingSize === 1) {
+          if (vromSwitchingSize === 1) {
             // Swap 4kB of VROM:
-            if (this.romSelectionReg1 === 0) {
-              this.loadVromBank(value & 0xf, 0x1000);
+            if (romSelectionReg1 === 0) {
+              mapper.loadVromBank(value & 0xf, 0x1000);
             } else {
-              this.loadVromBank(
-                Math.floor(this.nes.rom.getVRomCount() / 2) + (value & 0xf),
+              mapper.loadVromBank(
+                Math.floor(nes.rom.getVRomCount() / 2) + (value & 0xf),
                 0x1000
               );
             }
@@ -129,31 +130,31 @@ export function mapper001(nes, opts) {
         var bank;
         var baseBank = 0;
 
-        if (this.nes.rom.getRomCount() >= 32) {
+        if (nes.rom.getRomCount() >= 32) {
           // 1024 kB cart
-          if (this.vromSwitchingSize === 0) {
-            if (this.romSelectionReg0 === 1) {
+          if (vromSwitchingSize === 0) {
+            if (romSelectionReg0 === 1) {
               baseBank = 16;
             }
           } else {
             baseBank =
-              (this.romSelectionReg0 | (this.romSelectionReg1 << 1)) << 3;
+              (romSelectionReg0 | (romSelectionReg1 << 1)) << 3;
           }
-        } else if (this.nes.rom.getRomCount() >= 16) {
+        } else if (nes.rom.getRomCount() >= 16) {
           // 512 kB cart
-          if (this.romSelectionReg0 === 1) {
+          if (romSelectionReg0 === 1) {
             baseBank = 8;
           }
         }
 
-        if (this.prgSwitchingSize === 0) {
+        if (prgSwitchingSize === 0) {
           // 32kB
           bank = baseBank + (value & 0xf);
-          this.load32kRomBank(bank, 0x8000);
+          mapper.load32kRomBank(bank, 0x8000);
         } else {
           // 16kB
           bank = baseBank * 2 + (value & 0xf);
-          if (this.prgSwitchingArea === 0) {
+          if (prgSwitchingArea === 0) {
             mapper.loadRomBank(bank, 0xc000);
           } else {
             mapper.loadRomBank(bank, 0x8000);
@@ -162,7 +163,6 @@ export function mapper001(nes, opts) {
     }
   }
 
-  const mapper = mapper000(nes, opts);
   return {
     ...mapper,
     reset() {
@@ -201,9 +201,9 @@ export function mapper001(nes, opts) {
             ((value & 1) << regBufferCounter);
           regBufferCounter++;
 
-          if (this.regBufferCounter === 5) {
+          if (regBufferCounter === 5) {
             // Use the buffered value:
-            setReg(getRegNumber(address), this.regBuffer);
+            setReg(getRegNumber(address), regBuffer);
 
             // Reset buffer:
             regBuffer = 0;
@@ -219,7 +219,7 @@ export function mapper001(nes, opts) {
     
       // Load PRG-ROM:
       mapper.loadRomBank(0, 0x8000); //   First ROM bank..
-      mapper.loadRomBank(this.nes.rom.getRomCount() - 1, 0xc000); // ..and last ROM bank.
+      mapper.loadRomBank(nes.rom.getRomCount() - 1, 0xc000); // ..and last ROM bank.
     
       // Load CHR-ROM:
       mapper.loadCHRROM();
