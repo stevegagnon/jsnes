@@ -4,7 +4,7 @@ import mapper000 from './mapper000';
 import { Irq } from '../cpu';
 import { RomFlags } from '../rom';
 
-export function mapper001(nes) {
+export function mapper001(nes, opts) {
   let regBuffer = 0;
   let regBufferCounter = 0;
 
@@ -162,7 +162,7 @@ export function mapper001(nes) {
     }
   }
 
-  const mapper = mapper000(nes);
+  const mapper = mapper000(nes, opts);
   return {
     ...mapper,
     reset() {

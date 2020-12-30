@@ -1,6 +1,6 @@
 import { Irq } from '../cpu';
 
-function ChannelDM({ getDmcFrequency, cpu, mmap }) {
+function ChannelDM(nes, { getDmcFrequency }) {
   let MODE_NORMAL = 0;
   let MODE_LOOP = 1;
   let MODE_IRQ = 2;
@@ -75,7 +75,7 @@ function ChannelDM({ getDmcFrequency, cpu, mmap }) {
     }
 
     if (irqGenerated) {
-      cpu.requestIrq(Irq.Normal);
+      nes.cpu.requestIrq(Irq.Normal);
     }
   }
 
@@ -102,8 +102,8 @@ function ChannelDM({ getDmcFrequency, cpu, mmap }) {
 
   function nextSample() {
     // Fetch byte:
-    data = mmap.load(playAddress);
-    cpu.haltCycles(4);
+    data = nes.mmap.load(playAddress);
+    nes.cpu.haltCycles(4);
 
     playLengthCounter--;
     playAddress++;
@@ -174,6 +174,16 @@ function ChannelDM({ getDmcFrequency, cpu, mmap }) {
     return irqGenerated ? 1 : 0;
   }
 
+  function clock(nCycles) {
+    if (isEnabled) {
+      shiftCounter -= nCycles << 3;
+      while (shiftCounter <= 0 && dmaFrequency > 0) {
+        shiftCounter += dmaFrequency;
+        clockDmc();
+      }
+    }
+  }
+
   return {
     reset,
     clockDmc,
@@ -185,7 +195,8 @@ function ChannelDM({ getDmcFrequency, cpu, mmap }) {
     getIrqStatus,
     setIrqGenerated: v => irqGenerated = v,
     getSample: () => sample,
-    
+    clock
+
   };
 }
 

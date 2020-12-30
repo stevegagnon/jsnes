@@ -9,8 +9,8 @@ import { Irq } from '../cpu';
  * @constructor
  */
 
-export function mapper180(nes) {
-  const mapper = mapper000(nes);
+export function mapper180(nes, opts) {
+  const mapper = mapper000(nes, opts);
   return {
     ...mapper,
     write(address, value) {
@@ -36,7 +36,7 @@ export function mapper180(nes) {
       mapper.loadCHRROM();
 
       // Do Reset-Interrupt:
-      nes.cpu.requestIrq(nes.cpu.IRQ_RESET);
+      nes.cpu.requestIrq(Irq.Reset);
     }
   };
 }

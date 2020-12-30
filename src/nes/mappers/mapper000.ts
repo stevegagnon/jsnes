@@ -1,3 +1,4 @@
+import { Irq } from '../cpu';
 
 function copyArrayElements(src, srcPos, dest, destPos, length) {
   for (var i = 0; i < length; ++i) {
@@ -5,7 +6,7 @@ function copyArrayElements(src, srcPos, dest, destPos, length) {
   }
 }
 
-export function mapper00(nes) {
+export function mapper00(nes, { onBatteryRamWrite }) {
   let joy1StrobeState = 0;
   let joy2StrobeState = 0;
   let joypadLastWrite = 0;
@@ -27,12 +28,12 @@ export function mapper00(nes) {
   function write(address, value) {
     if (address < 0x2000) {
       // Mirroring of RAM:
-      nes.cpu.mem[address & 0x7ff] = value;
+      nes.mem[address & 0x7ff] = value;
     } else if (address > 0x4017) {
-      nes.cpu.mem[address] = value;
+      nes.mem[address] = value;
       if (address >= 0x6000 && address < 0x8000) {
         // Write to persistent RAM
-        nes.onBatteryRamWrite(address, value);
+        onBatteryRamWrite(address, value);
       }
     } else if (address > 0x2007 && address < 0x4000) {
       regWrite(0x2000 + (address & 0x7), value);
@@ -44,9 +45,9 @@ export function mapper00(nes) {
   function writelow(address, value) {
     if (address < 0x2000) {
       // Mirroring of RAM:
-      nes.cpu.mem[address & 0x7ff] = value;
+      nes.mem[address & 0x7ff] = value;
     } else if (address > 0x4017) {
-      nes.cpu.mem[address] = value;
+      nes.mem[address] = value;
     } else if (address > 0x2007 && address < 0x4000) {
       regWrite(0x2000 + (address & 0x7), value);
     } else {
@@ -61,13 +62,13 @@ export function mapper00(nes) {
     // Check address range:
     if (address > 0x4017) {
       // ROM:
-      return nes.cpu.mem[address];
+      return nes.mem[address];
     } else if (address >= 0x2000) {
       // I/O Ports.
       return regLoad(address);
     } else {
       // RAM (mirrored)
-      return nes.cpu.mem[address & 0x7ff];
+      return nes.mem[address & 0x7ff];
     }
   }
 
@@ -94,7 +95,7 @@ export function mapper00(nes) {
             // in main memory and in the
             // PPU as flags):
             // (not in the real NES)
-            return nes.cpu.mem[0x2000];
+            return nes.mem[0x2000];
 
           case 0x1:
             // 0x2001:
@@ -103,7 +104,7 @@ export function mapper00(nes) {
             // in main memory and in the
             // PPU as flags):
             // (not in the real NES)
-            return nes.cpu.mem[0x2001];
+            return nes.mem[0x2001];
 
           case 0x2:
             // 0x2002:
@@ -177,13 +178,13 @@ export function mapper00(nes) {
     switch (address) {
       case 0x2000:
         // PPU Control register 1
-        nes.cpu.mem[address] = value;
+        nes.mem[address] = value;
         nes.ppu.updateControlReg1(value);
         break;
 
       case 0x2001:
         // PPU Control register 2
-        nes.cpu.mem[address] = value;
+        nes.mem[address] = value;
         nes.ppu.updateControlReg2(value);
         break;
 
@@ -346,7 +347,7 @@ export function mapper00(nes) {
 
     // Reset IRQ:
     //nes.getCpu().doResetInterrupt();
-    nes.cpu.requestIrq(nes.cpu.IRQ_RESET);
+    nes.cpu.requestIrq(Irq.Reset);
   }
 
   function loadPRGROM() {
@@ -381,7 +382,7 @@ export function mapper00(nes) {
       var ram = nes.rom.getBatteryRom();
       if (ram !== null && ram.length === 0x2000) {
         // Load Battery RAM into memory:
-        copyArrayElements(ram, 0, nes.cpu.mem, 0x6000, 0x2000);
+        copyArrayElements(ram, 0, nes.mem, 0x6000, 0x2000);
       }
     }
   }
@@ -394,7 +395,7 @@ export function mapper00(nes) {
     copyArrayElements(
       nes.rom.getRom(bank),
       0,
-      nes.cpu.mem,
+      nes.mem,
       address,
       16384
     );
@@ -490,15 +491,15 @@ export function mapper00(nes) {
     }
   }
 
-  function load8kRomBank (bank8k, address) {
+  function load8kRomBank(bank8k, address) {
     var bank16k = Math.floor(bank8k / 2) % nes.rom.getRomCount();
     var offset = (bank8k % 2) * 8192;
 
-    //nes.cpu.mem.write(address,nes.rom.getRom(bank16k),offset,8192);
+    //nes.mem.write(address,nes.rom.getRom(bank16k),offset,8192);
     copyArrayElements(
       nes.rom.getRom(bank16k),
       offset,
-      nes.cpu.mem,
+      nes.mem,
       address,
       8192
     );
@@ -542,6 +543,9 @@ export function mapper00(nes) {
     load8kRomBank,
     load1kVromBank,
     loadPRGROM,
+    loadROM,
+    load,
+    latchAccess
   };
 }
 

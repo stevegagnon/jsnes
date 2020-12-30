@@ -6,12 +6,12 @@ import { Irq } from '../cpu';
 
 const CPU_FREQ_NTSC = 1789772.5; //1789772.72727272d;
 
-export function PAPU({cpu, mmap, preferredFrameRate, onAudioSample, sampleRate = 44100}) {
+export function PAPU(nes, { preferredFrameRate, onAudioSample, sampleRate = 44100 }) {
   let square1 = ChannelSquare({ getLengthMax }, true);
   let square2 = ChannelSquare({ getLengthMax }, false);
   let triangle = ChannelTriangle({ getLengthMax });
   let noise = ChannelNoise({ getLengthMax, getNoiseWaveLength });
-  let dmc = ChannelDM({ getDmcFrequency, cpu, mmap });
+  let dmc = ChannelDM(nes, { getDmcFrequency });
 
   let frameIrqCounter = null;
   let frameIrqCounterMax = 4;
@@ -273,107 +273,24 @@ export function PAPU({cpu, mmap, preferredFrameRate, onAudioSample, sampleRate =
       extraCycles = 0;
     }
 
-    var dmc = dmc;
-    var triangle = triangle;
-    var square1 = square1;
-    var square2 = square2;
-    var noise = noise;
-
     // Clock DMC:
-    if (dmc.isEnabled) {
-      dmc.shiftCounter -= nCycles << 3;
-      while (dmc.shiftCounter <= 0 && dmc.dmaFrequency > 0) {
-        dmc.shiftCounter += dmc.dmaFrequency;
-        dmc.clockDmc();
-      }
-    }
+    dmc.clock(nCycles);
 
     // Clock Triangle channel Prog timer:
-    if (triangle.progTimerMax > 0) {
-      triangle.progTimerCount -= nCycles;
-      while (triangle.progTimerCount <= 0) {
-        triangle.progTimerCount += triangle.progTimerMax + 1;
-        if (triangle.linearCounter > 0 && triangle.lengthCounter > 0) {
-          triangle.triangleCounter++;
-          triangle.triangleCounter &= 0x1f;
-
-          if (triangle.isEnabled) {
-            if (triangle.triangleCounter >= 0x10) {
-              // Normal value.
-              triangle.sampleValue = triangle.triangleCounter & 0xf;
-            } else {
-              // Inverted value.
-              triangle.sampleValue = 0xf - (triangle.triangleCounter & 0xf);
-            }
-            triangle.sampleValue <<= 4;
-          }
-        }
-      }
-    }
+    triangle.clock(nCycles);
 
     // Clock Square channel 1 Prog timer:
-    square1.progTimerCount -= nCycles;
-    if (square1.progTimerCount <= 0) {
-      square1.progTimerCount += (square1.progTimerMax + 1) << 1;
-
-      square1.squareCounter++;
-      square1.squareCounter &= 0x7;
-      square1.updateSampleValue();
-    }
+    square1.clock(nCycles);
 
     // Clock Square channel 2 Prog timer:
-    square2.progTimerCount -= nCycles;
-    if (square2.progTimerCount <= 0) {
-      square2.progTimerCount += (square2.progTimerMax + 1) << 1;
-
-      square2.squareCounter++;
-      square2.squareCounter &= 0x7;
-      square2.updateSampleValue();
-    }
+    square2.clock(nCycles);
 
     // Clock noise channel Prog timer:
-    var acc_c = nCycles;
-    if (noise.progTimerCount - acc_c > 0) {
-      // Do all cycles at once:
-      noise.progTimerCount -= acc_c;
-      noise.accCount += acc_c;
-      noise.accValue += acc_c * noise.sampleValue;
-    } else {
-      // Slow-step:
-      while (acc_c-- > 0) {
-        if (--noise.progTimerCount <= 0 && noise.progTimerMax > 0) {
-          // Update noise shift register:
-          noise.shiftReg <<= 1;
-          noise.tmp =
-            ((noise.shiftReg << (noise.randomMode === 0 ? 1 : 6)) ^
-              noise.shiftReg) &
-            0x8000;
-          if (noise.tmp !== 0) {
-            // Sample value must be 0.
-            noise.shiftReg |= 0x01;
-            noise.randomBit = 0;
-            noise.sampleValue = 0;
-          } else {
-            // Find sample value:
-            noise.randomBit = 1;
-            if (noise.isEnabled && noise.lengthCounter > 0) {
-              noise.sampleValue = noise.masterVolume;
-            } else {
-              noise.sampleValue = 0;
-            }
-          }
-
-          noise.progTimerCount += noise.progTimerMax;
-        }
-
-        noise.accValue += noise.sampleValue;
-        noise.accCount++;
-      }
-    }
+    noise.clock(nCycles);
 
     // Frame IRQ handling:
     if (frameIrqEnabled && frameIrqActive) {
-      cpu.requestIrq(Irq.Normal);
+      nes.cpu.requestIrq(Irq.Normal);
     }
 
     // Clock frame counter at double CPU speed:
@@ -704,6 +621,8 @@ export function PAPU({cpu, mmap, preferredFrameRate, onAudioSample, sampleRate =
 
   return {
     reset,
+    clockFrameCounter,
+    writeReg
   };
 }
 

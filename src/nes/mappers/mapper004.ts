@@ -1,8 +1,8 @@
 import mapper000 from './mapper000';
 import { Irq } from '../cpu';
 
-export function mapper004(nes) {
-  const mapper = mapper000(nes);
+export function mapper004(nes, opts) {
+  const mapper = mapper000(nes, opts);
 
   let CMD_SEL_2_1K_VROM_0000 = 0;
   let CMD_SEL_2_1K_VROM_0800 = 1;

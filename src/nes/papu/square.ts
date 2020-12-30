@@ -197,6 +197,17 @@ export function ChannelSquare({ getLengthMax }, sqr1) {
     return lengthCounter === 0 || !isEnabled ? 0 : 1;
   }
 
+  function clock(nCycles) {
+    progTimerCount -= nCycles;
+    if (progTimerCount <= 0) {
+      progTimerCount += (progTimerMax + 1) << 1;
+
+      squareCounter++;
+      squareCounter &= 0x7;
+      updateSampleValue();
+    }
+  }
+
   return {
     reset,
     clockLengthCounter,
@@ -206,7 +217,8 @@ export function ChannelSquare({ getLengthMax }, sqr1) {
     writeReg,
     clockEnvDecay,
     setEnabled,
-    getSampleValue: () => sampleValue
+    getSampleValue: () => sampleValue,
+    clock
   };
 }
 

@@ -8,7 +8,7 @@ export enum PpuStatus {
   VBLANK = 7,
 };
 
-export function PPU({ ui, cpu, mmap }) {
+export function PPU(nes, { onFrame }) {
   let vramMem = null;
   let spriteMem = null;
   let vramAddress = null;
@@ -349,7 +349,7 @@ export function PPU({ ui, cpu, mmap }) {
 
   function startVBlank() {
     // Do NMI:
-    cpu.requestIrq(cpu.IRQ_NMI);
+    nes.cpu.requestIrq(nes.cpu.IRQ_NMI);
 
     // Make sure everything is rendered:
     if (lastRenderedScanline < 239) {
@@ -410,7 +410,7 @@ export function PPU({ ui, cpu, mmap }) {
 
         if (f_bgVisibility === 1 || f_spVisibility === 1) {
           // Clock mapper IRQ Counter:
-          mmap.clockIrqCounter();
+          nes.mmap.clockIrqCounter();
         }
         break;
 
@@ -456,7 +456,7 @@ export function PPU({ ui, cpu, mmap }) {
 
           if (f_bgVisibility === 1 || f_spVisibility === 1) {
             // Clock mapper IRQ Counter:
-            mmap.clockIrqCounter();
+            nes.mmap.clockIrqCounter();
           }
         }
     }
@@ -506,7 +506,6 @@ export function PPU({ ui, cpu, mmap }) {
       }
     }
 
-    var buffer = buffer;
     var i;
     for (i = 0; i < 256 * 240; i++) {
       buffer[i] = bgColor;
@@ -518,7 +517,6 @@ export function PPU({ ui, cpu, mmap }) {
 
   function endFrame() {
     var i, x, y;
-    var buffer = buffer;
 
     // Draw spr#0 hit coordinates:
     if (showSpr0Hit) {
@@ -587,7 +585,7 @@ export function PPU({ ui, cpu, mmap }) {
       }
     }
 
-    ui.writeFrame(buffer);
+    onFrame(buffer);
   }
 
   function updateControlReg1(value) {
@@ -623,13 +621,13 @@ export function PPU({ ui, cpu, mmap }) {
 
   function setStatusFlag(flag, value) {
     var n = 1 << flag;
-    cpu.mem[0x2002] = (cpu.mem[0x2002] & (255 - n)) | (value ? n : 0);
+    nes.mem[0x2002] = (nes.mem[0x2002] & (255 - n)) | (value ? n : 0);
   }
 
   // CPU Register $2002:
   // Read the Status Register.
   function readStatusRegister() {
-    var tmp = cpu.mem[0x2002];
+    var tmp = nes.mem[0x2002];
 
     // Reset scroll & VRAM Address toggle:
     firstWrite = true;
@@ -718,7 +716,7 @@ export function PPU({ ui, cpu, mmap }) {
     // Invoke mapper latch:
     cntsToAddress();
     if (vramAddress < 0x2000) {
-      mmap.latchAccess(vramAddress);
+      nes.mmap.latchAccess(vramAddress);
     }
   }
 
@@ -743,7 +741,7 @@ export function PPU({ ui, cpu, mmap }) {
 
       // Mapper latch access:
       if (vramAddress < 0x2000) {
-        mmap.latchAccess(vramAddress);
+        nes.mmap.latchAccess(vramAddress);
       }
 
       // Increment by either 1 or 32, depending on d2 of Control Register 1:
@@ -782,7 +780,7 @@ export function PPU({ ui, cpu, mmap }) {
       writeMem(vramAddress, value);
 
       // Invoke mapper latch:
-      mmap.latchAccess(vramAddress);
+      nes.mmap.latchAccess(vramAddress);
     }
 
     // Increment by either 1 or 32, depending on d2 of Control Register 1:
@@ -799,12 +797,12 @@ export function PPU({ ui, cpu, mmap }) {
     var baseAddress = value * 0x100;
     var data;
     for (var i = sramAddress; i < 256; i++) {
-      data = cpu.mem[baseAddress + i];
+      data = nes.mem[baseAddress + i];
       spriteMem[i] = data;
       spriteRamWriteUpdate(i, data);
     }
 
-    cpu.haltCycles(513);
+    nes.cpu.haltCycles(513);
   }
 
   // Updates the scroll registers from a new VRAM address.
@@ -939,9 +937,7 @@ export function PPU({ ui, cpu, mmap }) {
       if (ei > 0xf000) {
         ei = 0xf000;
       }
-      var buffer = buffer;
-      var bgbuffer = bgbuffer;
-      var pixrendered = pixrendered;
+
       for (var destIndex = si; destIndex < ei; destIndex++) {
         if (pixrendered[destIndex] > 0xff) {
           buffer[destIndex] = bgbuffer[destIndex];
@@ -1346,19 +1342,19 @@ export function PPU({ ui, cpu, mmap }) {
     } else if (address >= 0x2000 && address < 0x23c0) {
       nameTableWrite(ntable1[0], address - 0x2000, value);
     } else if (address >= 0x23c0 && address < 0x2400) {
-      attribTableWrite(ntable1[0], address - 0x23c0, value);
+      writeAttrib(ntable1[0], address - 0x23c0, value);
     } else if (address >= 0x2400 && address < 0x27c0) {
       nameTableWrite(ntable1[1], address - 0x2400, value);
     } else if (address >= 0x27c0 && address < 0x2800) {
-      attribTableWrite(ntable1[1], address - 0x27c0, value);
+      writeAttrib(ntable1[1], address - 0x27c0, value);
     } else if (address >= 0x2800 && address < 0x2bc0) {
       nameTableWrite(ntable1[2], address - 0x2800, value);
     } else if (address >= 0x2bc0 && address < 0x2c00) {
-      attribTableWrite(ntable1[2], address - 0x2bc0, value);
+      writeAttrib(ntable1[2], address - 0x2bc0, value);
     } else if (address >= 0x2c00 && address < 0x2fc0) {
       nameTableWrite(ntable1[3], address - 0x2c00, value);
     } else if (address >= 0x2fc0 && address < 0x3000) {
-      attribTableWrite(ntable1[3], address - 0x2fc0, value);
+      writeAttrib(ntable1[3], address - 0x2fc0, value);
     } else if (address >= 0x3f00 && address < 0x3f20) {
       updatePalettes();
     }
@@ -1424,13 +1420,6 @@ export function PPU({ ui, cpu, mmap }) {
     checkSprite0(scanline - 20);
   }
 
-  // Updates the internal pattern
-  // table buffers with this new attribute
-  // table byte.
-  function attribTableWrite(index, address, value) {
-    nameTable[index].writeAttrib(address, value);
-  }
-
   // Updates the internally buffered sprite
   // data with this new byte of info.
   function spriteRamWriteUpdate(address, value) {
@@ -1463,7 +1452,7 @@ export function PPU({ ui, cpu, mmap }) {
     // Set VBlank flag:
     setStatusFlag(PpuStatus.VBLANK, true);
     //nes.getCpu().doNonMaskableInterrupt();
-    cpu.requestIrq(cpu.IRQ_NMI);
+    nes.cpu.requestIrq(nes.cpu.IRQ_NMI);
   }
 
   function isPixelWhite(x, y) {

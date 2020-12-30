@@ -5,9 +5,8 @@ export enum Irq {
   Reset = 2,
 }
 
-export function CPU({ mmap, halt }) {
+export function CPU(nes) {
   // Keep Chrome happy
-  let mem = null;
   let REG_ACC = null;
   let REG_X = null;
   let REG_Y = null;
@@ -35,23 +34,6 @@ export function CPU({ mmap, halt }) {
   reset();
 
   function reset() {
-    // Main memory
-    mem = new Array(0x10000);
-
-    for (let i = 0; i < 0x2000; i++) {
-      mem[i] = 0xff;
-    }
-    for (let p = 0; p < 4; p++) {
-      let j = p * 0x800;
-      mem[j + 0x008] = 0xf7;
-      mem[j + 0x009] = 0xef;
-      mem[j + 0x00a] = 0xdf;
-      mem[j + 0x00f] = 0xbf;
-    }
-    for (let k = 0x2001; k < mem.length; k++) {
-      mem[k] = 0;
-    }
-
     // CPU Registers:
     REG_ACC = 0;
     REG_X = 0;
@@ -80,7 +62,7 @@ export function CPU({ mmap, halt }) {
     F_BRK = 1;
     F_BRK_NEW = 1;
 
-    opdata = new OpData().opdata;
+    opdata = OpData();
     cyclesToHalt = 0;
 
     // Reset crash flag:
@@ -139,7 +121,8 @@ export function CPU({ mmap, halt }) {
       irqRequested = false;
     }
 
-    let opinf = opdata[mmap.load(REG_PC + 1)];
+    let opoffset = nes.mmap.load(REG_PC + 1);
+    let opinf = opdata[opoffset];
     let cycleCount = opinf >> 24;
     let cycleAdd = 0;
 
@@ -256,12 +239,12 @@ export function CPU({ mmap, halt }) {
         addr = load16bit(opaddr + 2); // Find op
         if (addr < 0x1fff) {
           addr =
-            mem[addr] +
-            (mem[(addr & 0xff00) | (((addr & 0xff) + 1) & 0xff)] << 8); // Read from address given in op
+            nes.mem[addr] +
+            (nes.mem[(addr & 0xff00) | (((addr & 0xff) + 1) & 0xff)] << 8); // Read from address given in op
         } else {
           addr =
-            mmap.load(addr) +
-            (mmap.load(
+            nes.mmap.load(addr) +
+            (nes.mmap.load(
               (addr & 0xff00) | (((addr & 0xff) + 1) & 0xff)
             ) <<
               8);
@@ -1244,8 +1227,7 @@ export function CPU({ mmap, halt }) {
         // * ??? *
         // *******
 
-        halt("Game crashed, invalid opcode at address $" + opaddr.toString(16));
-        break;
+        throw new Error(`Game crashed, invalid opcode (${opinf & 0xff}) at address ${opaddr.toString(16)}`);
       }
     } // end of switch
 
@@ -1254,25 +1236,25 @@ export function CPU({ mmap, halt }) {
 
   function load(addr) {
     if (addr < 0x2000) {
-      return mem[addr & 0x7ff];
+      return nes.mem[addr & 0x7ff];
     } else {
-      return mmap.load(addr);
+      return nes.mmap.load(addr);
     }
   }
 
   function load16bit(addr) {
     if (addr < 0x1fff) {
-      return mem[addr & 0x7ff] | (mem[(addr + 1) & 0x7ff] << 8);
+      return nes.mem[addr & 0x7ff] | (nes.mem[(addr + 1) & 0x7ff] << 8);
     } else {
-      return mmap.load(addr) | (mmap.load(addr + 1) << 8);
+      return nes.mmap.load(addr) | (nes.mmap.load(addr + 1) << 8);
     }
   }
 
   function write(addr, val) {
     if (addr < 0x2000) {
-      mem[addr & 0x7ff] = val;
+      nes.mem[addr & 0x7ff] = val;
     } else {
-      mmap.write(addr, val);
+      nes.mmap.write(addr, val);
     }
   }
 
@@ -1288,7 +1270,7 @@ export function CPU({ mmap, halt }) {
   }
 
   function push(value) {
-    mmap.write(REG_SP, value);
+    nes.mmap.write(REG_SP, value);
     REG_SP--;
     REG_SP = 0x0100 | (REG_SP & 0xff);
   }
@@ -1300,7 +1282,7 @@ export function CPU({ mmap, halt }) {
   function pull() {
     REG_SP++;
     REG_SP = 0x0100 | (REG_SP & 0xff);
-    return mmap.load(REG_SP);
+    return nes.mmap.load(REG_SP);
   }
 
   function pageCrossed(addr1, addr2) {
@@ -1312,7 +1294,7 @@ export function CPU({ mmap, halt }) {
   }
 
   function doNonMaskableInterrupt(status) {
-    if ((mmap.load(0x2000) & 128) !== 0) {
+    if ((nes.mmap.load(0x2000) & 128) !== 0) {
       // Check whether VBlank Interrupts are enabled
 
       REG_PC_NEW++;
@@ -1322,14 +1304,14 @@ export function CPU({ mmap, halt }) {
       push(status);
 
       REG_PC_NEW =
-        mmap.load(0xfffa) | (mmap.load(0xfffb) << 8);
+        nes.mmap.load(0xfffa) | (nes.mmap.load(0xfffb) << 8);
       REG_PC_NEW--;
     }
   }
 
   function doResetInterrupt() {
     REG_PC_NEW =
-      mmap.load(0xfffc) | (mmap.load(0xfffd) << 8);
+      nes.mmap.load(0xfffc) | (nes.mmap.load(0xfffd) << 8);
     REG_PC_NEW--;
   }
 
@@ -1342,7 +1324,7 @@ export function CPU({ mmap, halt }) {
     F_BRK_NEW = 0;
 
     REG_PC_NEW =
-      mmap.load(0xfffe) | (mmap.load(0xffff) << 8);
+      nes.mmap.load(0xfffe) | (nes.mmap.load(0xffff) << 8);
     REG_PC_NEW--;
   }
 
@@ -1403,7 +1385,6 @@ export function CPU({ mmap, halt }) {
   
   function toJSON() {
     return {
-      mem,
       cyclesToHalt,
       irqRequested,
       irqType,
@@ -1432,7 +1413,6 @@ export function CPU({ mmap, halt }) {
 
   function fromJSON(state) {
     [
-      mem,
       cyclesToHalt,
       irqRequested,
       irqType,
@@ -1464,6 +1444,8 @@ export function CPU({ mmap, halt }) {
     frameLoop,
     toJSON,
     fromJSON,
+    requestIrq
+
   };
 }
 
@@ -2072,6 +2054,8 @@ export function OpData() {
       ((size & 0xff) << 16) |
       ((cycles & 0xff) << 24);
   }
+
+  return opdata;
 }
 
 export default CPU;

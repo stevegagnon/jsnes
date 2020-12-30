@@ -9,8 +9,8 @@ import { RomFlags } from '../rom';
  * @constructor
  */
 
-export function mapper007(nes) {
-  const mapper = mapper000(nes);
+export function mapper007(nes, opts) {
+  const mapper = mapper000(nes, opts);
   return {
     ...mapper,
     write(address, value) {

@@ -8,8 +8,8 @@ import mapper000 from './mapper000';
  * @constructor
  */
 
-export function mapper011(nes) {
-  const mapper = mapper000(nes);
+export function mapper011(nes, opts) {
+  const mapper = mapper000(nes, opts);
   return {
     ...mapper,
     write(address, value) {

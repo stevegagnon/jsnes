@@ -10,8 +10,8 @@ import { Irq } from '../cpu';
  * @constructor
  */
 
-export function mapper066(nes) {
-  const mapper = mapper000(nes);
+export function mapper066(nes, opts) {
+  const mapper = mapper000(nes, opts);
   return {
     ...mapper,
     write(address, value) {

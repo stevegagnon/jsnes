@@ -12,8 +12,7 @@ export enum RomFlags {
   CHRROM_MIRRORING = 7,
 }
 
-export function ROM(nes) {
-  let header = null;
+export function ROM() {
   let rom = null;
   let vrom = null;
   let vromTile = null;
@@ -29,28 +28,39 @@ export function ROM(nes) {
 
   function load(data) {
     var i, j, v;
+    const dv = new DataView(data);
 
-    if (data.indexOf("NES\x1a") === -1) {
+    if (dv.getInt32(0, true) !== 0x1A53454E) {
       throw new Error("Not a valid NES ROM.");
     }
-    header = new Array(16);
-    for (i = 0; i < 16; i++) {
-      header[i] = data.charCodeAt(i) & 0xff;
-    }
-    romCount = header[4];
-    vromCount = header[5] * 2; // Get the number of 4kB banks, not 8kB
-    mirroring = (header[6] & 1) !== 0 ? 1 : 0;
-    batteryRam = (header[6] & 2) !== 0;
-    trainer = (header[6] & 4) !== 0;
-    fourScreen = (header[6] & 8) !== 0;
-    mapperType = (header[6] >> 4) | (header[7] & 0xf0);
+
+    const flags = dv.getUint8(6);
+
+    romCount = dv.getUint8(4);
+    vromCount = dv.getUint8(5) * 2; // Get the number of 4kB banks, not 8kB
+    mirroring = (flags & 1) !== 0 ? 1 : 0;
+    batteryRam = (flags & 2) !== 0;
+    trainer = (flags & 4) !== 0;
+    fourScreen = (flags & 8) !== 0;
+    mapperType = (flags >> 4) | (dv.getUint8(7) & 0xf0);
+
+    // console.log({
+    //   romCount,
+    //   vromCount,
+    //   mirroring,
+    //   batteryRam,
+    //   trainer,
+    //   fourScreen,
+    //   mapperType,
+    // });
+
     /* TODO
         if (batteryRam)
             loadBatteryRam();*/
     // Check whether byte 8-15 are zero's:
     var foundError = false;
     for (i = 8; i < 16; i++) {
-      if (header[i] !== 0) {
+      if (dv.getUint8(i) !== 0) {
         foundError = true;
         break;
       }
@@ -58,29 +68,37 @@ export function ROM(nes) {
     if (foundError) {
       mapperType &= 0xf; // Ignore byte 7
     }
+    
     // Load PRG-ROM banks:
     rom = new Array(romCount);
     var offset = 16;
     for (i = 0; i < romCount; i++) {
-      rom[i] = new Array(16384);
+      const bank = new Array(16384);
+
       for (j = 0; j < 16384; j++) {
-        if (offset + j >= data.length) {
+        if (offset + j >= dv.byteLength) {
           break;
         }
-        rom[i][j] = data.charCodeAt(offset + j) & 0xff;
+        bank[j] = dv.getUint8(offset + j);
       }
+
+      rom[i] = bank;
       offset += 16384;
     }
+
     // Load CHR-ROM banks:
     vrom = new Array(vromCount);
     for (i = 0; i < vromCount; i++) {
-      vrom[i] = new Array(4096);
+      const bank = new Array(4096);
+      
       for (j = 0; j < 4096; j++) {
-        if (offset + j >= data.length) {
+        if (offset + j >= dv.byteLength) {
           break;
         }
-        vrom[i][j] = data.charCodeAt(offset + j) & 0xff;
+        bank[j] = dv.getUint8(offset + j);
       }
+
+      vrom[i] = bank;
       offset += 4096;
     }
 
@@ -129,16 +147,7 @@ export function ROM(nes) {
     return RomFlags.VERTICAL_MIRRORING;
   }
 
-  function createMapper() {
-    if (Mappers[mapperType]) {
-      return new Mappers[mapperType](nes);
-    } else {
-      const name = getMapperName(mapperType);
-      throw new Error(`ROM not supported: ${name}(${mapperType})`);
-    }
-  }
-
-  return {
+  const self = {
     load,
     getMirroringType,
     createMapper,
@@ -164,6 +173,17 @@ export function ROM(nes) {
       return vromTile[bank];
     }
   };
+
+  function createMapper(nes, opts) {
+    if (Mappers[mapperType]) {
+      return new Mappers[mapperType](nes, opts);
+    } else {
+      const name = getMapperName(mapperType);
+      throw new Error(`ROM not supported: ${name}(${mapperType})`);
+    }
+  }
+
+  return self;
 };
 
 export default ROM;

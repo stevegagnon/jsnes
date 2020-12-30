@@ -9,8 +9,8 @@ import { Irq } from '../cpu';
  * @description http://wiki.nesdev.com/w/index.php/INES_Mapper_003
  */
 
-export function mapper003(nes) {
-  const mapper = mapper000(nes);
+export function mapper003(nes, opts) {
+  const mapper = mapper000(nes, opts);
   return {
     ...mapper,
     write(address, value) {

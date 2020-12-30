@@ -8,8 +8,8 @@ import mapper000 from './mapper000';
  * @example Darkseed, Mashou, Mission Impossible 2
  */
 
-export function mapper034(nes) {
-  const mapper = mapper000(nes);
+export function mapper034(nes, opts) {
+  const mapper = mapper000(nes, opts);
   return {
     ...mapper,
     write(address, value) {

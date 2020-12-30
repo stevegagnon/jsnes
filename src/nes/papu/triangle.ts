@@ -147,6 +147,30 @@ export function ChannelTriangle({ getLengthMax }) {
     return triValue;
   }
 
+  function clock(nCycles) {
+    if (progTimerMax > 0) {
+      progTimerCount -= nCycles;
+      while (progTimerCount <= 0) {
+        progTimerCount += progTimerMax + 1;
+        if (linearCounter > 0 && lengthCounter > 0) {
+          triangleCounter++;
+          triangleCounter &= 0x1f;
+
+          if (isEnabled) {
+            if (triangleCounter >= 0x10) {
+              // Normal value.
+              sampleValue = triangleCounter & 0xf;
+            } else {
+              // Inverted value.
+              sampleValue = 0xf - (triangleCounter & 0xf);
+            }
+            sampleValue <<= 4;
+          }
+        }
+      }
+    }
+  }
+
   return {
     reset,
     clockLengthCounter,
@@ -159,7 +183,8 @@ export function ChannelTriangle({ getLengthMax }) {
     setEnabled,
     updateSampleCondition,
     accSample,
-    getSampleValue: () => sampleValue
+    getSampleValue: () => sampleValue,
+    clock
   };
 }
 

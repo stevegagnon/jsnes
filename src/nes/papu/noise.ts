@@ -126,6 +126,46 @@ export function ChannelNoise({ getLengthMax, getNoiseWaveLength }) {
     return accValue;
   }
 
+  function clock(acc_c) {
+    if (progTimerCount - acc_c > 0) {
+      // Do all cycles at once:
+      progTimerCount -= acc_c;
+      accCount += acc_c;
+      accValue += acc_c * sampleValue;
+    } else {
+      // Slow-step:
+      while (acc_c-- > 0) {
+        if (--progTimerCount <= 0 && progTimerMax > 0) {
+          // Update noise shift register:
+          shiftReg <<= 1;
+          tmp =
+            ((shiftReg << (randomMode === 0 ? 1 : 6)) ^
+              shiftReg) &
+            0x8000;
+          if (tmp !== 0) {
+            // Sample value must be 0.
+            shiftReg |= 0x01;
+            randomBit = 0;
+            sampleValue = 0;
+          } else {
+            // Find sample value:
+            randomBit = 1;
+            if (isEnabled && lengthCounter > 0) {
+              sampleValue = masterVolume;
+            } else {
+              sampleValue = 0;
+            }
+          }
+
+          progTimerCount += progTimerMax;
+        }
+
+        accValue += sampleValue;
+        accCount++;
+      }
+    }
+  }
+
   return {
     reset,
     clockLengthCounter,
@@ -134,7 +174,8 @@ export function ChannelNoise({ getLengthMax, getNoiseWaveLength }) {
     writeReg,
     setEnabled,
     getLengthStatus,
-    acc
+    acc,
+    clock
   };
 }
 
