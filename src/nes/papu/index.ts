@@ -622,7 +622,8 @@ export function PAPU(nes, { preferredFrameRate, onAudioSample, sampleRate = 4410
   return {
     reset,
     clockFrameCounter,
-    writeReg
+    writeReg,
+    readReg,
   };
 }
 

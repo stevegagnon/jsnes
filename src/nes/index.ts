@@ -96,13 +96,13 @@ function NES({
   }
 
   function frame() {
-    let { mmap, cpu, ppu, papu } = components;
+    let { mmap, cpu, ppu } = components;
 
     if (mmap) {
       ppu.startFrame();
 
       while (1) {
-        let cycles = cpu.frameLoop(papu);
+        let cycles = cpu.frameLoop();
         if (ppu.doCycles(cycles) > 0) {
           break;
         }
@@ -110,26 +110,24 @@ function NES({
   
       fpsFrameCount++;
     }
-
   }
 
   function zapperMove(x, y) {
     let { mmap } = components;
     if (!mmap) return;
-    mmap.zapperX = x;
-    mmap.zapperY = y;
+    mmap.setZapperPosition(x, y);
   }
 
   function zapperFireDown() {
     let { mmap } = components;
     if (!mmap) return;
-    mmap.zapperFired = true;
+    mmap.setZapperFiring(true);
   }
 
   function zapperFireUp() {
     let { mmap } = components;
     if (!mmap) return;
-    mmap.zapperFired = false;
+    mmap.setZapperFiring(false);
   }
 
   function getFPS() {

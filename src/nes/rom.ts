@@ -44,15 +44,15 @@ export function ROM() {
     fourScreen = (flags & 8) !== 0;
     mapperType = (flags >> 4) | (dv.getUint8(7) & 0xf0);
 
-    // console.log({
-    //   romCount,
-    //   vromCount,
-    //   mirroring,
-    //   batteryRam,
-    //   trainer,
-    //   fourScreen,
-    //   mapperType,
-    // });
+    console.log(dv.byteLength, {
+      romCount,
+      vromCount,
+      mirroring,
+      batteryRam,
+      trainer,
+      fourScreen,
+      mapperType,
+    });
 
     /* TODO
         if (batteryRam)

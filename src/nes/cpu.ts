@@ -1352,27 +1352,31 @@ export function CPU(nes) {
     F_SIGN = (st >> 7) & 1;
   }
 
-  function frameLoop(papu) {
+  function frameLoop() {
     let cycles = 0;
+
+    if ((window as any).debug) {
+      debugger;
+    }
 
     if (cyclesToHalt === 0) {
       // Execute a CPU instruction
       cycles = emulate();
-      if (papu) {
-        papu.clockFrameCounter(cycles);
+      if (nes.papu) {
+        nes.papu.clockFrameCounter(cycles);
       }
       cycles *= 3;
     } else {
       if (cyclesToHalt > 8) {
         cycles = 24;
-        if (papu) {
-          papu.clockFrameCounter(8);
+        if (nes.papu) {
+          nes.papu.clockFrameCounter(8);
         }
         cyclesToHalt -= 8;
       } else {
         cycles = cyclesToHalt * 3;
-        if (papu) {
-          papu.clockFrameCounter(cyclesToHalt);
+        if (nes.papu) {
+          nes.papu.clockFrameCounter(cyclesToHalt);
         }
         cyclesToHalt = 0;
       }
@@ -1444,8 +1448,8 @@ export function CPU(nes) {
     frameLoop,
     toJSON,
     fromJSON,
-    requestIrq
-
+    requestIrq,
+    haltCycles,
   };
 }
 

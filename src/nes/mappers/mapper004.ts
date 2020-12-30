@@ -1,5 +1,6 @@
 import mapper000 from './mapper000';
 import { Irq } from '../cpu';
+import { RomFlags } from '../rom';
 
 export function mapper004(nes, opts) {
   const mapper = mapper000(nes, opts);
@@ -145,9 +146,9 @@ export function mapper004(nes, opts) {
           case 0xa000:
             // Mirroring select
             if ((value & 1) !== 0) {
-              nes.ppu.setMirroring(nes.rom.HORIZONTAL_MIRRORING);
+              nes.ppu.setMirroring(RomFlags.HORIZONTAL_MIRRORING);
             } else {
-              nes.ppu.setMirroring(nes.rom.VERTICAL_MIRRORING);
+              nes.ppu.setMirroring(RomFlags.VERTICAL_MIRRORING);
             }
             break;
 

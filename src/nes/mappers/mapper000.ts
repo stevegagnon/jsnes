@@ -1,4 +1,5 @@
 import { Irq } from '../cpu';
+import { PpuStatus } from '../ppu';
 
 function copyArrayElements(src, srcPos, dest, destPos, length) {
   for (var i = 0; i < length; ++i) {
@@ -259,7 +260,7 @@ export function mapper00(nes, { onBatteryRamWrite }) {
       case 5:
       case 6:
       case 7:
-        ret = nes.controllers[1].state[joy1StrobeState];
+        ret = nes.controllers[1][joy1StrobeState];
         break;
       case 8:
       case 9:
@@ -301,7 +302,7 @@ export function mapper00(nes, { onBatteryRamWrite }) {
       case 5:
       case 6:
       case 7:
-        ret = nes.controllers[2].state[joy2StrobeState];
+        ret = nes.controllers[2][joy2StrobeState];
         break;
       case 8:
       case 9:
@@ -528,6 +529,14 @@ export function mapper00(nes, { onBatteryRamWrite }) {
     joypadLastWrite = s.joypadLastWrite;
   }
 
+  function setZapperPosition(x, y) {
+    zapperX = x;
+    zapperY = y;
+  }
+
+  function setZapperFiring(firing) {
+    zapperFired = firing;
+  }
 
   return {
     reset,
@@ -545,7 +554,10 @@ export function mapper00(nes, { onBatteryRamWrite }) {
     loadPRGROM,
     loadROM,
     load,
-    latchAccess
+    latchAccess,
+    setZapperPosition,
+    setZapperFiring,
+    clockIrqCounter
   };
 }
 

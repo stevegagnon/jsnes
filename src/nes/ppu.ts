@@ -1,5 +1,6 @@
 import { Tile, TileFields } from './tile';
 import { RomFlags } from './rom';
+import { Irq } from './cpu';
 
 export enum PpuStatus {
   VRAMWRITE = 4,
@@ -349,7 +350,7 @@ export function PPU(nes, { onFrame }) {
 
   function startVBlank() {
     // Do NMI:
-    nes.cpu.requestIrq(nes.cpu.IRQ_NMI);
+    nes.cpu.requestIrq(Irq.Nmi);
 
     // Make sure everything is rendered:
     if (lastRenderedScanline < 239) {
@@ -952,7 +953,7 @@ export function PPU(nes, { onFrame }) {
     validTileData = false;
   }
 
-  function renderBgScanline(bgbuffer, scan) {
+  function renderBgScanline(useBgbuffer, scan) {
     var baseTile = regS === 0 ? 0 : 256;
     var destIndex = (scan << 8) - regFH;
 
@@ -964,7 +965,7 @@ export function PPU(nes, { onFrame }) {
 
     if (scan < 240 && scan - cntFV >= 0) {
       var tscanoffset = cntFV << 3;
-      var targetBuffer = bgbuffer ? bgbuffer : buffer;
+      var targetBuffer = useBgbuffer ? bgbuffer : buffer;
       var t: TileFields;
       var tpix, att, col;
 
@@ -1452,7 +1453,7 @@ export function PPU(nes, { onFrame }) {
     // Set VBlank flag:
     setStatusFlag(PpuStatus.VBLANK, true);
     //nes.getCpu().doNonMaskableInterrupt();
-    nes.cpu.requestIrq(nes.cpu.IRQ_NMI);
+    nes.cpu.requestIrq(Irq.Nmi);
   }
 
   function isPixelWhite(x, y) {
