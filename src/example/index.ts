@@ -14,7 +14,9 @@ var audio_samples_L = new Float32Array(SAMPLE_COUNT);
 var audio_samples_R = new Float32Array(SAMPLE_COUNT);
 var audio_write_cursor = 0, audio_read_cursor = 0;
 
-var running = true;
+var running = false;
+let state;
+let rom;
 
 var nes = NES({
   onFrame: function (framebuffer_24) {
@@ -39,28 +41,38 @@ function audio_remain() {
 }
 
 function audio_callback(event) {
-  if (!running) return;
-
-  try {
+  if (!running) {
     var dst = event.outputBuffer;
-    var len = dst.length;
-  
-    // Attempt to avoid buffer underruns.
-    if (audio_remain() < AUDIO_BUFFERING) nes.frame();
-  
     var dst_l = dst.getChannelData(0);
     var dst_r = dst.getChannelData(1);
-    for (var i = 0; i < len; i++) {
-      var src_idx = (audio_read_cursor + i) & SAMPLE_MASK;
-      dst_l[i] = audio_samples_L[src_idx];
-      dst_r[i] = audio_samples_R[src_idx];
+
+    dst_l.fill(0);
+    dst_r.fill(0);
+    
+  } else {
+    try {
+      var dst = event.outputBuffer;
+      var len = dst.length;
+    
+      // Attempt to avoid buffer underruns.
+      if (audio_remain() < AUDIO_BUFFERING) nes.frame();
+    
+      var dst_l = dst.getChannelData(0);
+      var dst_r = dst.getChannelData(1);
+      for (var i = 0; i < len; i++) {
+        var src_idx = (audio_read_cursor + i) & SAMPLE_MASK;
+        dst_l[i] = audio_samples_L[src_idx];
+        dst_r[i] = audio_samples_R[src_idx];
+      }
+    
+      audio_read_cursor = (audio_read_cursor + len) & SAMPLE_MASK;
+    } catch (e) {
+      running = false;
+      throw e;
     }
-  
-    audio_read_cursor = (audio_read_cursor + len) & SAMPLE_MASK;
-  } catch (e) {
-    running = false;
-    throw e;
   }
+
+
 }
 
 function keyboard(callback, event) {
@@ -113,10 +125,6 @@ function nes_boot(rom_data) {
   window.requestAnimationFrame(onAnimationFrame);
 }
 
-function nes_load_data(canvas_id, rom_data) {
-  nes_init(canvas_id);
-  nes_boot(rom_data);
-}
 
 document.addEventListener('keydown', (event) => { keyboard(nes.buttonDown, event) });
 document.addEventListener('keyup', (event) => { keyboard(nes.buttonUp, event) });
@@ -124,6 +132,27 @@ document.addEventListener('keyup', (event) => { keyboard(nes.buttonUp, event) })
 fetch('InterglacticTransmissing.nes')
   .then(response => response.arrayBuffer())
   .then(data => {
+    rom = data;
     nes_init('nes-canvas')
     nes_boot(data);
-  })
+  });
+
+const pauseButton = document.getElementById('pause');
+
+pauseButton.addEventListener('click', () => {
+  running = !running;
+});
+
+document.getElementById('serialize').addEventListener('click', () => {
+  state = nes.toJSON();
+  console.log(state);
+});
+
+document.getElementById('deserialize').addEventListener('click', () => {
+  nes.fromJSON(state);
+});
+
+document.getElementById('reload').addEventListener('click', () => {
+  nes.loadROM(rom);
+});
+

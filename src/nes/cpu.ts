@@ -1386,7 +1386,7 @@ export function CPU(nes) {
   }
 
 
-  
+
   function toJSON() {
     return {
       cyclesToHalt,
@@ -1416,7 +1416,7 @@ export function CPU(nes) {
   }
 
   function fromJSON(state) {
-    [
+    ({
       cyclesToHalt,
       irqRequested,
       irqType,
@@ -1440,7 +1440,7 @@ export function CPU(nes) {
       F_NOTUSED_NEW,
       F_BRK,
       F_BRK_NEW,
-    ] = state;
+    } = state);
   }
 
   return {

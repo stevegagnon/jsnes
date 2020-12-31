@@ -1,7 +1,7 @@
 
 export function Tile() {
-  let pix = new Array(64);
-  let opaque = new Array(8);
+  let pix = new Uint32Array(64);
+  let opaque = new Uint32Array(8);
 
   let fbIndex = null;
   let tIndex = null;
@@ -29,7 +29,7 @@ export function Tile() {
       pix[tIndex + x] =
         ((b1 >> (7 - x)) & 1) + (((b2 >> (7 - x)) & 1) << 1);
       if (pix[tIndex + x] === 0) {
-        opaque[sline] = false;
+        opaque[sline] = 0;
       }
     }
   }
@@ -188,10 +188,8 @@ export function Tile() {
   }
 
   function fromJSON(s) {
-    [
-      opaque,
-      pix
-    ] = s;
+    opaque = new Uint32Array(s.opaque, 8);
+    pix = new Uint32Array(s.pix, 64);
   }
 
   return {

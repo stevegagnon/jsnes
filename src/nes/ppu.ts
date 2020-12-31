@@ -82,8 +82,8 @@ export function PPU(nes, { onFrame }) {
 
   function reset() {
     // Memory
-    vramMem = new Array(0x8000).fill(0);
-    spriteMem = new Array(0x100).fill(0);
+    vramMem = new Uint32Array(0x8000).fill(0);
+    spriteMem = new Uint32Array(0x100).fill(0);
 
     // VRAM I/O:
     vramAddress = null;
@@ -140,10 +140,10 @@ export function PPU(nes, { onFrame }) {
     curNt = null;
 
     // Variables used when rendering:
-    attrib = new Array(32);
-    buffer = new Array(256 * 240);
-    bgbuffer = new Array(256 * 240);
-    pixrendered = new Array(256 * 240);
+    attrib = new Uint32Array(32);
+    buffer = new Uint32Array(256 * 240);
+    bgbuffer = new Uint32Array(256 * 240);
+    pixrendered = new Uint32Array(256 * 240);
 
     validTileData = null;
 
@@ -167,7 +167,7 @@ export function PPU(nes, { onFrame }) {
     hitSpr0 = false;
 
     // Palette data:
-    sprPalette = new Array(16);
+    sprPalette = new Uint32Array(16);
     imgPalette = new Array(16);
 
     // Create pattern table tile buffers:
@@ -192,7 +192,7 @@ export function PPU(nes, { onFrame }) {
     }
 
     // Initialize mirroring lookup table:
-    vramMirrorTable = new Array(0x8000);
+    vramMirrorTable = new Uint32Array(0x8000);
     for (let i = 0; i < 0x8000; i++) {
       vramMirrorTable[i] = i;
     }
@@ -276,7 +276,7 @@ export function PPU(nes, { onFrame }) {
 
     // Remove mirroring:
     if (vramMirrorTable === null) {
-      vramMirrorTable = new Array(0x8000);
+      vramMirrorTable = new Uint32Array(0x8000);
     }
     for (var i = 0; i < 0x8000; i++) {
       vramMirrorTable[i] = i;
@@ -1516,7 +1516,7 @@ export function PPU(nes, { onFrame }) {
       scanline,
       lastRenderedScanline,
       curNt,
-      scantile,
+      scantile:  scantile.map(p => p.toJSON()),
       // Used during rendering
       attrib,
       buffer,
@@ -1535,10 +1535,10 @@ export function PPU(nes, { onFrame }) {
   }
 
   function fromJSON(state) {
-    [
+    ({
       // Memory
-      vramMem,
-      spriteMem,
+      // vramMem,
+      // spriteMem,
       // Counters
       cntFV,
       cntV,
@@ -1574,26 +1574,26 @@ export function PPU(nes, { onFrame }) {
       firstWrite,
       // Mirroring
       currentMirroring,
-      vramMirrorTable,
-      ntable1,
+      // vramMirrorTable,
+      // ntable1,
       // SPR-RAM I/O
       sramAddress,
       // Sprites. Most sprite data is rebuilt from spriteMem
       hitSpr0,
       // Palettes
-      sprPalette,
-      imgPalette,
+      // sprPalette,
+      // imgPalette,
       // Rendering progression
       curX,
       scanline,
       lastRenderedScanline,
       curNt,
-      scantile,
+      // scantile,
       // Used during rendering
-      attrib,
-      buffer,
-      bgbuffer,
-      pixrendered,
+      // attrib,
+      // buffer,
+      // bgbuffer,
+      // pixrendered,
       // Misc
       requestEndFrame,
       nmiOk,
@@ -1601,16 +1601,35 @@ export function PPU(nes, { onFrame }) {
       nmiCounter,
       validTileData,
       scanlineAlreadyRendered,
-    ] = state;
+    } = state);
+
+    attrib = new Uint32Array(state.attrib, 32);
+    buffer = new Uint32Array(state.buffer, 256 * 240);
+    bgbuffer = new Uint32Array(state.bgbuffer, 256 * 240);
+    pixrendered = new Uint32Array(state.pixrendered, 256 * 240);
+
+    sprPalette = new Uint32Array(state.sprPalette, 16);
+    imgPalette = new Uint32Array(state.sprPalette, 16);
+
+    ntable1 = new Uint32Array(state.ntable1, 4);
+
+    spriteMem = new Uint32Array(state.spriteMem, spriteMem.length);
+    vramMem = new Uint32Array(state.vramMem, vramMem.length);
+
+    vramMirrorTable = new Uint32Array(state.vramMirrorTable, vramMem.vramMirrorTable);
 
     for (let i = 0; i < nameTable.length; i++) {
       const s = state.nameTable[i];
-      nameTable[i].tile = s.tile;
-      nameTable[i].attrib = s.attrib;
+      nameTable[i].tile = new Uint32Array(s.tile);
+      nameTable[i].attrib = new Uint32Array(s.attrib);
     }
 
     for (let i = 0; i < ptTile.length; i++) {
       ptTile[i].fromJSON(state.ptTile[i]);
+    }
+
+    for (let i = 0; i < scantile.length; i++) {
+      scantile[i].fromJSON(state.scantile[i]);
     }
 
     // Sprite data:

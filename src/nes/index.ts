@@ -35,11 +35,10 @@ function NES({
 }: NesOpts) {
   let frameTime = 1000 / preferredFrameRate;
   let fpsFrameCount = 0;
-  let romData = null;
   let lastFpsTime;
 
   const components = {
-    mem: new Array(0x10000),
+    mem: new Uint32Array(0x10000),
     mmap: undefined,
     rom: undefined,
     cpu: undefined,
@@ -141,18 +140,11 @@ function NES({
     return fps;
   }
 
-  function reloadROM() {
-    if (romData !== null) {
-      loadROM(romData);
-    }
-  }
-
   // Loads a ROM file into the CPU and PPU.
   // The ROM file is validated first.
   function loadROM(data) {
     reset();
-    console.log(components);
-    
+
     components.rom = ROM();
     components.rom.load(data);
 
@@ -165,15 +157,11 @@ function NES({
     components.ppu.setMirroring(
       components.rom.getMirroringType()
     );
-
-    console.log(components);
-
-    romData = data;
   }
 
   function toJSON() {
     return {
-      romData,
+      mem: components.mem,
       cpu: components.cpu.toJSON(),
       mmap: components.mmap.toJSON(),
       ppu: components.ppu.toJSON(),
@@ -181,7 +169,7 @@ function NES({
   }
 
   function fromJSON(s) {
-    loadROM(s.romData);
+    components.mem = new Uint32Array(s.mem);
     components.cpu.fromJSON(s.cpu);
     components.mmap.fromJSON(s.mmap);
     components.ppu.fromJSON(s.ppu);
@@ -191,7 +179,9 @@ function NES({
     loadROM,
     frame,
     buttonDown,
-    buttonUp
+    buttonUp,
+    toJSON,
+    fromJSON,
   }
 };
 
