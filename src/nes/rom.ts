@@ -176,7 +176,7 @@ export function ROM() {
 
   function createMapper(nes, opts) {
     if (Mappers[mapperType]) {
-      return new Mappers[mapperType](nes, opts);
+      return Mappers[mapperType](nes, opts);
     } else {
       const name = getMapperName(mapperType);
       throw new Error(`ROM not supported: ${name}(${mapperType})`);

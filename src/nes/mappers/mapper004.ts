@@ -236,7 +236,7 @@ export function mapper004(nes, opts) {
     },
     fromJSON(s) {
       mapper.fromJSON(s);
-      [
+      ({
         command,
         prgAddressSelect,
         chrAddressSelect,
@@ -245,7 +245,7 @@ export function mapper004(nes, opts) {
         irqLatchValue,
         irqEnable,
         prgAddressChanged,
-      ] = s;
+      } = s);
     }
   };
 }

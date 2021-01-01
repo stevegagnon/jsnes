@@ -216,17 +216,17 @@ export function mapper001(nes, opts) {
       if (!nes.rom.isValid()) {
         throw new Error("MMC1: Invalid ROM! Unable to load.");
       }
-    
+
       // Load PRG-ROM:
       mapper.loadRomBank(0, 0x8000); //   First ROM bank..
       mapper.loadRomBank(nes.rom.getRomCount() - 1, 0xc000); // ..and last ROM bank.
-    
+
       // Load CHR-ROM:
       mapper.loadCHRROM();
-    
+
       // Load Battery RAM (if present):
       mapper.loadBatteryRam();
-    
+
       // Do Reset-Interrupt:
       nes.cpu.requestIrq(Irq.Reset);
     },
@@ -256,7 +256,7 @@ export function mapper001(nes, opts) {
     },
     fromJSON(s) {
       mapper.fromJSON(s);
-      [
+      ({
         mirroring,
         oneScreenMirroring,
         prgSwitchingArea,
@@ -267,7 +267,7 @@ export function mapper001(nes, opts) {
         romBankSelect,
         regBuffer,
         regBufferCounter,
-      ] = s;
+      } = s);
     }
   };
 }
