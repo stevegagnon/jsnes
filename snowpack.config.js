@@ -1,7 +1,6 @@
 module.exports = {
   mount: {
-    'src/nes': '/_dist_',
-    'src/example': '/',
+    'src/polyrom': '/',
   },
   plugins: [
     '@snowpack/plugin-typescript',
@@ -17,7 +16,6 @@ module.exports = {
   },
   proxy: { },
   alias: {
-    '@nes': './src/nes',
   },
   // experiments: {
   //   optimize: {

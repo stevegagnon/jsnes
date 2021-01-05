@@ -28,7 +28,7 @@ function NES({
   onFrame,
   onAudioSample,
   onStatusUpdate = () => undefined,
-  onBatteryRamWrite,
+  onBatteryRamWrite = () => undefined,
   preferredFrameRate = 60,
   emulateSound = true,
   sampleRate = 48000
@@ -53,6 +53,13 @@ function NES({
   components.cpu = CPU(components);
   components.ppu = PPU(components, { onFrame });
   components.papu = PAPU(components, { preferredFrameRate, onAudioSample });
+
+  function resetButtons() {
+    components.controllers = {
+      1: new Array(8).fill(0x40),
+      2: new Array(8).fill(0x40),
+    };
+  }
 
   function buttonDown(controller: number, button: number) {
     components.controllers[controller][button] = 0x41;
@@ -182,6 +189,7 @@ function NES({
     buttonUp,
     toJSON,
     fromJSON,
+    resetButtons,
   }
 };
 
